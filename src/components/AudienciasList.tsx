@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, FileText, Users, Trash2 } from "lucide-react";
+import { Calendar, Clock, FileText, Users, Trash2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -26,7 +27,10 @@ interface Audiencia {
 
 const AudienciasList = () => {
   const [audiencias, setAudiencias] = useState<Audiencia[]>([]);
+  const [filteredAudiencias, setFilteredAudiencias] = useState<Audiencia[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchNome, setSearchNome] = useState("");
+  const [searchDoc, setSearchDoc] = useState("");
   const { toast } = useToast();
 
   const fetchAudiencias = async () => {
@@ -38,7 +42,8 @@ const AudienciasList = () => {
           atribuicoes:atribuicoes (
             pessoa:pessoas (
               nome,
-              tipo
+              tipo,
+              id
             )
           )
         `)
@@ -46,7 +51,31 @@ const AudienciasList = () => {
         .order("hora_audiencia", { ascending: true });
 
       if (error) throw error;
-      setAudiencias((data || []) as any);
+      
+      // Fetch pessoas data separately to get OAB/CPF
+      const audienciasWithPessoas = await Promise.all(
+        (data || []).map(async (aud: any) => {
+          if (aud.atribuicoes?.length > 0) {
+            const pessoaIds = aud.atribuicoes.map((atr: any) => atr.pessoa.id);
+            const { data: pessoasData } = await supabase
+              .from("pessoas")
+              .select("id, nome, tipo")
+              .in("id", pessoaIds);
+            
+            return {
+              ...aud,
+              atribuicoes: aud.atribuicoes.map((atr: any) => ({
+                ...atr,
+                pessoa: pessoasData?.find((p) => p.id === atr.pessoa.id) || atr.pessoa,
+              })),
+            };
+          }
+          return aud;
+        })
+      );
+      
+      setAudiencias(audienciasWithPessoas as any);
+      setFilteredAudiencias(audienciasWithPessoas as any);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -57,6 +86,22 @@ const AudienciasList = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const filtered = audiencias.filter((aud) => {
+      const matchNome = !searchNome || 
+        (aud.atribuicoes?.some((atr: any) => 
+          atr.pessoa?.nome?.toLowerCase().includes(searchNome.toLowerCase())
+        ) ?? false);
+      
+      const matchDoc = !searchDoc || 
+        aud.numero_processo?.includes(searchDoc);
+      
+      return matchNome && matchDoc;
+    });
+    
+    setFilteredAudiencias(filtered);
+  }, [searchNome, searchDoc, audiencias]);
 
   useEffect(() => {
     fetchAudiencias();
@@ -121,11 +166,36 @@ const AudienciasList = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-foreground">Audiências Cadastradas</h2>
         <Badge variant="outline" className="text-lg px-4 py-2">
-          {audiencias.length} audiências
+          {filteredAudiencias.length} audiências
         </Badge>
       </div>
 
-      {audiencias.length === 0 ? (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome do advogado/preposto"
+                value={searchNome}
+                onChange={(e) => setSearchNome(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por número do processo"
+                value={searchDoc}
+                onChange={(e) => setSearchDoc(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {filteredAudiencias.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -137,7 +207,7 @@ const AudienciasList = () => {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {audiencias.map((audiencia) => (
+          {filteredAudiencias.map((audiencia) => (
             <Card key={audiencia.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
