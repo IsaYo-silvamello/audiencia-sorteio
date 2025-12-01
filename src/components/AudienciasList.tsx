@@ -14,7 +14,8 @@ interface Audiencia {
   numero_processo: string;
   data_audiencia: string;
   hora_audiencia: string;
-  partes: string;
+  autor: string;
+  reu: string;
   assunto: string;
   status: string;
   atribuicoes?: Array<{
@@ -246,9 +247,15 @@ const AudienciasList = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div>
-                  <p className="text-sm font-medium text-foreground mb-1">Partes</p>
-                  <p className="text-sm text-muted-foreground">{audiencia.partes}</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground mb-1">Autor</p>
+                    <p className="text-sm text-muted-foreground">{audiencia.autor}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground mb-1">Réu</p>
+                    <p className="text-sm text-muted-foreground">{audiencia.reu}</p>
+                  </div>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-foreground mb-1">Assunto</p>

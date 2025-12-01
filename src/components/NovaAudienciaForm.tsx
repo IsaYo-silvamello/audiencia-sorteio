@@ -9,12 +9,88 @@ import { useToast } from "@/hooks/use-toast";
 import { CalendarPlus } from "lucide-react";
 
 const NovaAudienciaForm = () => {
+  const realizarSorteioAutomatico = async () => {
+    try {
+      const { data: audienciasPendentes, error: audienciasError } = await supabase
+        .from("audiencias")
+        .select("*")
+        .eq("status", "pendente");
+
+      if (audienciasError) throw audienciasError;
+      if (!audienciasPendentes || audienciasPendentes.length === 0) return;
+
+      const { data: pessoasAtivas, error: pessoasError } = await supabase
+        .from("pessoas")
+        .select("*")
+        .eq("ativo", true);
+
+      if (pessoasError) throw pessoasError;
+      if (!pessoasAtivas || pessoasAtivas.length === 0) return;
+
+      const dataAtual = new Date();
+      const inicioDaSemana = new Date(dataAtual);
+      inicioDaSemana.setDate(dataAtual.getDate() - dataAtual.getDay());
+      inicioDaSemana.setHours(0, 0, 0, 0);
+
+      const { data: atribuicoesSemanais, error: atribuicoesError } = await supabase
+        .from("atribuicoes")
+        .select("pessoa_id")
+        .gte("semana_inicio", inicioDaSemana.toISOString());
+
+      if (atribuicoesError) throw atribuicoesError;
+
+      const contagemAtribuicoes = atribuicoesSemanais?.reduce((acc: any, curr: any) => {
+        acc[curr.pessoa_id] = (acc[curr.pessoa_id] || 0) + 1;
+        return acc;
+      }, {}) || {};
+
+      const pessoasDisponiveis = pessoasAtivas.filter(
+        (pessoa) => (contagemAtribuicoes[pessoa.id] || 0) < 2
+      );
+
+      if (pessoasDisponiveis.length === 0) return;
+
+      const atribuicoesParaInserir = [];
+
+      for (const audiencia of audienciasPendentes) {
+        if (pessoasDisponiveis.length === 0) break;
+
+        const indiceAleatorio = Math.floor(Math.random() * pessoasDisponiveis.length);
+        const pessoaSorteada = pessoasDisponiveis[indiceAleatorio];
+
+        atribuicoesParaInserir.push({
+          audiencia_id: audiencia.id,
+          pessoa_id: pessoaSorteada.id,
+          semana_inicio: inicioDaSemana.toISOString().split("T")[0],
+        });
+
+        contagemAtribuicoes[pessoaSorteada.id] = (contagemAtribuicoes[pessoaSorteada.id] || 0) + 1;
+
+        if (contagemAtribuicoes[pessoaSorteada.id] >= 2) {
+          pessoasDisponiveis.splice(indiceAleatorio, 1);
+        }
+      }
+
+      if (atribuicoesParaInserir.length > 0) {
+        await supabase.from("atribuicoes").insert(atribuicoesParaInserir);
+
+        const idsAudienciasAtribuidas = atribuicoesParaInserir.map((a) => a.audiencia_id);
+        await supabase
+          .from("audiencias")
+          .update({ status: "atribuida" })
+          .in("id", idsAudienciasAtribuidas);
+      }
+    } catch (error) {
+      console.error("Erro no sorteio automático:", error);
+    }
+  };
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     numero_processo: "",
     data_audiencia: "",
     hora_audiencia: "",
-    partes: "",
+    autor: "",
+    reu: "",
     assunto: "",
   });
   const { toast } = useToast();
@@ -33,16 +109,20 @@ const NovaAudienciaForm = () => {
 
       if (error) throw error;
 
+      // Realizar sorteio automático
+      await realizarSorteioAutomatico();
+
       toast({
         title: "Audiência cadastrada com sucesso",
-        description: "A audiência foi adicionada ao sistema.",
+        description: "A audiência foi adicionada e o sorteio foi realizado.",
       });
 
       setFormData({
         numero_processo: "",
         data_audiencia: "",
         hora_audiencia: "",
-        partes: "",
+        autor: "",
+        reu: "",
         assunto: "",
       });
     } catch (error: any) {
@@ -115,12 +195,24 @@ const NovaAudienciaForm = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="partes">Partes do Processo</Label>
+            <Label htmlFor="autor">Autor</Label>
             <Textarea
-              id="partes"
-              placeholder="Ex: Autor vs. Réu"
-              value={formData.partes}
-              onChange={(e) => setFormData({ ...formData, partes: e.target.value })}
+              id="autor"
+              placeholder="Nome do autor"
+              value={formData.autor}
+              onChange={(e) => setFormData({ ...formData, autor: e.target.value })}
+              required
+              rows={2}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="reu">Réu</Label>
+            <Textarea
+              id="reu"
+              placeholder="Nome do réu"
+              value={formData.reu}
+              onChange={(e) => setFormData({ ...formData, reu: e.target.value })}
               required
               rows={2}
             />
