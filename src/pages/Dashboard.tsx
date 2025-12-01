@@ -9,6 +9,7 @@ import AudienciasList from "@/components/AudienciasList";
 import NovaAudienciaForm from "@/components/NovaAudienciaForm";
 import PessoasList from "@/components/PessoasList";
 import SorteioAudiencias from "@/components/SorteioAudiencias";
+import DashboardHome from "@/components/DashboardHome";
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -48,29 +49,31 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
-                <Scale className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-foreground">Sistema de Audiências</h1>
-                <p className="text-sm text-muted-foreground">Gestão DJEN</p>
-              </div>
+      <header className="border-b bg-card px-6 py-4">
+        <div className="flex items-center justify-between max-w-[1400px] mx-auto">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
+              <Scale className="h-6 w-6 text-primary-foreground" />
             </div>
-            <Button onClick={handleSignOut} variant="outline" size="sm">
-              <LogOut className="h-4 w-4 mr-2" />
-              Sair
-            </Button>
+            <div>
+              <h1 className="text-lg font-bold text-foreground">Juris Audiências</h1>
+              <p className="text-xs text-muted-foreground">Sistema de Gestão</p>
+            </div>
           </div>
+          <Button onClick={handleSignOut} variant="outline" size="sm">
+            <LogOut className="h-4 w-4 mr-2" />
+            Área Administrativa
+          </Button>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="audiencias" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8">
+      <main className="max-w-[1400px] mx-auto px-6 py-8">
+        <Tabs defaultValue="dashboard" className="w-full">
+          <TabsList className="grid w-full grid-cols-5 mb-8">
+            <TabsTrigger value="dashboard">
+              <Calendar className="h-4 w-4 mr-2" />
+              Dashboard
+            </TabsTrigger>
             <TabsTrigger value="audiencias">
               <Calendar className="h-4 w-4 mr-2" />
               Audiências
@@ -88,6 +91,10 @@ const Dashboard = () => {
               Sorteio
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="dashboard">
+            <DashboardHome />
+          </TabsContent>
 
           <TabsContent value="audiencias">
             <AudienciasList />
