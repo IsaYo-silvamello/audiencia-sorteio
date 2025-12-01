@@ -1,8 +1,7 @@
-import { Scale, UserPlus, Calendar, Users } from "lucide-react";
+import { Scale, Calendar, Settings } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AudienciasList from "@/components/AudienciasList";
-import NovaAudienciaForm from "@/components/NovaAudienciaForm";
-import PessoasList from "@/components/PessoasList";
+import AdminPanel from "@/components/AdminPanel";
 import DashboardHome from "@/components/DashboardHome";
 
 const Dashboard = () => {
@@ -25,7 +24,7 @@ const Dashboard = () => {
 
       <main className="max-w-[1400px] mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="dashboard">
               <Calendar className="h-4 w-4 mr-2" />
               Dashboard
@@ -34,13 +33,9 @@ const Dashboard = () => {
               <Calendar className="h-4 w-4 mr-2" />
               Audiências
             </TabsTrigger>
-            <TabsTrigger value="nova">
-              <UserPlus className="h-4 w-4 mr-2" />
-              Nova Audiência
-            </TabsTrigger>
-            <TabsTrigger value="pessoas">
-              <Users className="h-4 w-4 mr-2" />
-              Pessoas
+            <TabsTrigger value="admin">
+              <Settings className="h-4 w-4 mr-2" />
+              Administrador
             </TabsTrigger>
           </TabsList>
 
@@ -52,12 +47,8 @@ const Dashboard = () => {
             <AudienciasList />
           </TabsContent>
 
-          <TabsContent value="nova">
-            <NovaAudienciaForm />
-          </TabsContent>
-
-          <TabsContent value="pessoas">
-            <PessoasList />
+          <TabsContent value="admin">
+            <AdminPanel />
           </TabsContent>
         </Tabs>
       </main>
