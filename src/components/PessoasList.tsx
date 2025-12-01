@@ -20,6 +20,7 @@ interface Pessoa {
   nome: string;
   tipo: string;
   ativo: boolean;
+  documento: string | null;
 }
 
 const PessoasList = () => {
@@ -28,6 +29,7 @@ const PessoasList = () => {
   const [formData, setFormData] = useState({
     nome: "",
     tipo: "advogado",
+    documento: "",
   });
   const { toast } = useToast();
 
@@ -70,7 +72,7 @@ const PessoasList = () => {
         description: `${formData.tipo === "advogado" ? "Advogado" : "Preposto"} adicionado ao sistema.`,
       });
 
-      setFormData({ nome: "", tipo: "advogado" });
+      setFormData({ nome: "", tipo: "advogado", documento: "" });
       fetchPessoas();
     } catch (error: any) {
       toast({
@@ -137,6 +139,16 @@ const PessoasList = () => {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="documento">OAB/CPF</Label>
+              <Input
+                id="documento"
+                placeholder="Digite OAB ou CPF"
+                value={formData.documento}
+                onChange={(e) => setFormData({ ...formData, documento: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="tipo">Tipo</Label>
               <Select
                 value={formData.tipo}
@@ -181,7 +193,12 @@ const PessoasList = () => {
                   >
                     <div className="flex items-center gap-3">
                       <Badge variant="outline">Advogado</Badge>
-                      <span className="font-medium">{pessoa.nome}</span>
+                      <div>
+                        <span className="font-medium block">{pessoa.nome}</span>
+                        {pessoa.documento && (
+                          <span className="text-sm text-muted-foreground">OAB/CPF: {pessoa.documento}</span>
+                        )}
+                      </div>
                     </div>
                     <Button
                       variant="ghost"
@@ -218,7 +235,12 @@ const PessoasList = () => {
                   >
                     <div className="flex items-center gap-3">
                       <Badge variant="secondary">Preposto</Badge>
-                      <span className="font-medium">{pessoa.nome}</span>
+                      <div>
+                        <span className="font-medium block">{pessoa.nome}</span>
+                        {pessoa.documento && (
+                          <span className="text-sm text-muted-foreground">CPF: {pessoa.documento}</span>
+                        )}
+                      </div>
                     </div>
                     <Button
                       variant="ghost"
