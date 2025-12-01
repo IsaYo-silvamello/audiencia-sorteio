@@ -56,32 +56,35 @@ export type Database = {
       audiencias: {
         Row: {
           assunto: string
+          autor: string
           created_at: string
           data_audiencia: string
           hora_audiencia: string
           id: string
           numero_processo: string
-          partes: string
+          reu: string
           status: string
         }
         Insert: {
           assunto: string
+          autor?: string
           created_at?: string
           data_audiencia: string
           hora_audiencia: string
           id?: string
           numero_processo: string
-          partes: string
+          reu?: string
           status?: string
         }
         Update: {
           assunto?: string
+          autor?: string
           created_at?: string
           data_audiencia?: string
           hora_audiencia?: string
           id?: string
           numero_processo?: string
-          partes?: string
+          reu?: string
           status?: string
         }
         Relationships: []
@@ -91,25 +94,34 @@ export type Database = {
           ativo: boolean
           created_at: string
           documento: string | null
+          estado: string | null
           id: string
           nome: string
           tipo: string
+          tipo_advogado: string | null
+          valor_audiencia: number | null
         }
         Insert: {
           ativo?: boolean
           created_at?: string
           documento?: string | null
+          estado?: string | null
           id?: string
           nome: string
           tipo: string
+          tipo_advogado?: string | null
+          valor_audiencia?: number | null
         }
         Update: {
           ativo?: boolean
           created_at?: string
           documento?: string | null
+          estado?: string | null
           id?: string
           nome?: string
           tipo?: string
+          tipo_advogado?: string | null
+          valor_audiencia?: number | null
         }
         Relationships: []
       }

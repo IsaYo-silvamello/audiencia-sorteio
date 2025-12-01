@@ -21,6 +21,9 @@ interface Pessoa {
   tipo: string;
   ativo: boolean;
   documento: string | null;
+  tipo_advogado?: string | null;
+  estado?: string | null;
+  valor_audiencia?: number | null;
 }
 
 const PessoasList = () => {
@@ -30,6 +33,9 @@ const PessoasList = () => {
     nome: "",
     tipo: "advogado",
     documento: "",
+    tipo_advogado: "interno",
+    estado: "",
+    valor_audiencia: "",
   });
   const { toast } = useToast();
 
@@ -63,7 +69,22 @@ const PessoasList = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.from("pessoas").insert([formData]);
+      const dataToInsert: any = {
+        nome: formData.nome,
+        tipo: formData.tipo,
+        documento: formData.documento || null,
+        ativo: true,
+      };
+
+      if (formData.tipo === "advogado") {
+        dataToInsert.tipo_advogado = formData.tipo_advogado;
+        if (formData.tipo_advogado === "externo") {
+          dataToInsert.estado = formData.estado || null;
+          dataToInsert.valor_audiencia = formData.valor_audiencia ? parseFloat(formData.valor_audiencia) : null;
+        }
+      }
+
+      const { error } = await supabase.from("pessoas").insert([dataToInsert]);
 
       if (error) throw error;
 
@@ -72,7 +93,14 @@ const PessoasList = () => {
         description: `${formData.tipo === "advogado" ? "Advogado" : "Preposto"} adicionado ao sistema.`,
       });
 
-      setFormData({ nome: "", tipo: "advogado", documento: "" });
+      setFormData({ 
+        nome: "", 
+        tipo: "advogado", 
+        documento: "",
+        tipo_advogado: "interno",
+        estado: "",
+        valor_audiencia: "",
+      });
       fetchPessoas();
     } catch (error: any) {
       toast({
@@ -164,6 +192,52 @@ const PessoasList = () => {
               </Select>
             </div>
 
+            {formData.tipo === "advogado" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="tipo_advogado">Tipo de Advogado</Label>
+                  <Select
+                    value={formData.tipo_advogado}
+                    onValueChange={(value) => setFormData({ ...formData, tipo_advogado: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="interno">Interno</SelectItem>
+                      <SelectItem value="externo">Externo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.tipo_advogado === "externo" && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="estado">Estado</Label>
+                      <Input
+                        id="estado"
+                        placeholder="Ex: SP, RJ, MG"
+                        value={formData.estado}
+                        onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="valor_audiencia">Valor da Audiência</Label>
+                      <Input
+                        id="valor_audiencia"
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={formData.valor_audiencia}
+                        onChange={(e) => setFormData({ ...formData, valor_audiencia: e.target.value })}
+                      />
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Cadastrando..." : "Cadastrar"}
             </Button>
@@ -195,9 +269,18 @@ const PessoasList = () => {
                       <Badge variant="outline">Advogado</Badge>
                       <div>
                         <span className="font-medium block">{pessoa.nome}</span>
-                        {pessoa.documento && (
-                          <span className="text-sm text-muted-foreground">OAB/CPF: {pessoa.documento}</span>
-                        )}
+                        <div className="flex flex-col text-sm text-muted-foreground">
+                          {pessoa.documento && <span>OAB/CPF: {pessoa.documento}</span>}
+                          {pessoa.tipo_advogado && (
+                            <span className="capitalize">{pessoa.tipo_advogado}</span>
+                          )}
+                          {pessoa.tipo_advogado === "externo" && pessoa.estado && (
+                            <span>Estado: {pessoa.estado}</span>
+                          )}
+                          {pessoa.tipo_advogado === "externo" && pessoa.valor_audiencia && (
+                            <span>Valor: R$ {pessoa.valor_audiencia.toFixed(2)}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <Button
