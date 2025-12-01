@@ -19,8 +19,10 @@ interface Audiencia {
   status: string;
   atribuicoes?: Array<{
     pessoa: {
+      id: string;
       nome: string;
       tipo: string;
+      documento: string | null;
     };
   }>;
 }
@@ -43,7 +45,8 @@ const AudienciasList = () => {
             pessoa:pessoas (
               nome,
               tipo,
-              id
+              id,
+              documento
             )
           )
         `)
@@ -59,7 +62,7 @@ const AudienciasList = () => {
             const pessoaIds = aud.atribuicoes.map((atr: any) => atr.pessoa.id);
             const { data: pessoasData } = await supabase
               .from("pessoas")
-              .select("id, nome, tipo")
+              .select("id, nome, tipo, documento")
               .in("id", pessoaIds);
             
             return {
@@ -95,6 +98,9 @@ const AudienciasList = () => {
         ) ?? false);
       
       const matchDoc = !searchDoc || 
+        (aud.atribuicoes?.some((atr: any) => 
+          atr.pessoa?.documento?.includes(searchDoc)
+        ) ?? false) ||
         aud.numero_processo?.includes(searchDoc);
       
       return matchNome && matchDoc;
@@ -185,7 +191,7 @@ const AudienciasList = () => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por número do processo"
+                placeholder="Buscar por OAB/CPF ou número do processo"
                 value={searchDoc}
                 onChange={(e) => setSearchDoc(e.target.value)}
                 className="pl-10"
@@ -256,9 +262,16 @@ const AudienciasList = () => {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {audiencia.atribuicoes.map((atr: any, idx: number) => (
-                        <Badge key={idx} variant="secondary">
-                          {atr.pessoa.nome} ({atr.pessoa.tipo})
-                        </Badge>
+                        <div key={idx} className="flex flex-col gap-1">
+                          <Badge variant="secondary">
+                            {atr.pessoa.nome} ({atr.pessoa.tipo})
+                          </Badge>
+                          {atr.pessoa.documento && (
+                            <span className="text-xs text-muted-foreground ml-1">
+                              {atr.pessoa.tipo === 'advogado' ? 'OAB' : 'CPF'}: {atr.pessoa.documento}
+                            </span>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </div>
