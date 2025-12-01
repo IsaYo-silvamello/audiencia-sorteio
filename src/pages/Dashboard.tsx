@@ -1,9 +1,4 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { User, Session } from "@supabase/supabase-js";
-import { Button } from "@/components/ui/button";
-import { Scale, LogOut, UserPlus, Calendar, Users } from "lucide-react";
+import { Scale, UserPlus, Calendar, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AudienciasList from "@/components/AudienciasList";
 import NovaAudienciaForm from "@/components/NovaAudienciaForm";
@@ -12,40 +7,6 @@ import SorteioAudiencias from "@/components/SorteioAudiencias";
 import DashboardHome from "@/components/DashboardHome";
 
 const Dashboard = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (!session) {
-          navigate("/auth");
-        }
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (!session) {
-        navigate("/auth");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
-  };
-
-  if (!user) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,10 +21,6 @@ const Dashboard = () => {
               <p className="text-xs text-muted-foreground">Sistema de Gestão</p>
             </div>
           </div>
-          <Button onClick={handleSignOut} variant="outline" size="sm">
-            <LogOut className="h-4 w-4 mr-2" />
-            Área Administrativa
-          </Button>
         </div>
       </header>
 
