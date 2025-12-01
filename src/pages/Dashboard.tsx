@@ -3,7 +3,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AudienciasList from "@/components/AudienciasList";
 import NovaAudienciaForm from "@/components/NovaAudienciaForm";
 import PessoasList from "@/components/PessoasList";
-import SorteioAudiencias from "@/components/SorteioAudiencias";
 import DashboardHome from "@/components/DashboardHome";
 
 const Dashboard = () => {
@@ -26,7 +25,7 @@ const Dashboard = () => {
 
       <main className="max-w-[1400px] mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-8">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
             <TabsTrigger value="dashboard">
               <Calendar className="h-4 w-4 mr-2" />
               Dashboard
@@ -42,10 +41,6 @@ const Dashboard = () => {
             <TabsTrigger value="pessoas">
               <Users className="h-4 w-4 mr-2" />
               Pessoas
-            </TabsTrigger>
-            <TabsTrigger value="sorteio">
-              <Scale className="h-4 w-4 mr-2" />
-              Sorteio
             </TabsTrigger>
           </TabsList>
 
@@ -63,10 +58,6 @@ const Dashboard = () => {
 
           <TabsContent value="pessoas">
             <PessoasList />
-          </TabsContent>
-
-          <TabsContent value="sorteio">
-            <SorteioAudiencias />
           </TabsContent>
         </Tabs>
       </main>
