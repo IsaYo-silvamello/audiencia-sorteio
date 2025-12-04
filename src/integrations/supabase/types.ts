@@ -61,6 +61,7 @@ export type Database = {
           data_audiencia: string
           hora_audiencia: string
           id: string
+          link: string | null
           numero_processo: string
           reu: string
           status: string
@@ -72,6 +73,7 @@ export type Database = {
           data_audiencia: string
           hora_audiencia: string
           id?: string
+          link?: string | null
           numero_processo: string
           reu?: string
           status?: string
@@ -83,6 +85,7 @@ export type Database = {
           data_audiencia?: string
           hora_audiencia?: string
           id?: string
+          link?: string | null
           numero_processo?: string
           reu?: string
           status?: string
