@@ -2,10 +2,16 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, FileText, Users, Trash2, Search } from "lucide-react";
+import { Calendar, Clock, FileText, Users, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -133,19 +139,22 @@ const AudienciasList = () => {
     };
   }, []);
 
-  const handleDelete = async (id: string) => {
+  const handleStatusChange = async (id: string, newStatus: string) => {
     try {
-      const { error } = await supabase.from("audiencias").delete().eq("id", id);
+      const { error } = await supabase
+        .from("audiencias")
+        .update({ status: newStatus })
+        .eq("id", id);
       if (error) throw error;
 
       toast({
-        title: "Audiência excluída",
-        description: "A audiência foi removida do sistema.",
+        title: "Status atualizado",
+        description: `Audiência marcada como ${newStatus === "realizada" ? "Realizado" : "Não Realizado"}.`,
       });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Erro ao excluir audiência",
+        title: "Erro ao atualizar status",
         description: error.message,
       });
     }
@@ -158,7 +167,9 @@ const AudienciasList = () => {
       case "atribuida":
         return <Badge className="bg-success text-success-foreground">Atribuída</Badge>;
       case "realizada":
-        return <Badge variant="secondary">Realizada</Badge>;
+        return <Badge className="bg-green-600 text-white">Realizado</Badge>;
+      case "nao_realizada":
+        return <Badge variant="destructive">Não Realizado</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -234,15 +245,19 @@ const AudienciasList = () => {
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     {getStatusBadge(audiencia.status)}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(audiencia.id)}
+                    <Select
+                      onValueChange={(value) => handleStatusChange(audiencia.id, value)}
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue placeholder="Tratar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="realizada">Realizado</SelectItem>
+                        <SelectItem value="nao_realizada">Não Realizado</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </CardHeader>
