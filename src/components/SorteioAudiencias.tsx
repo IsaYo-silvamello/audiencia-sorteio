@@ -35,7 +35,7 @@ const SorteioAudiencias = () => {
         return;
       }
 
-      // Buscar pessoas ativas
+      // Buscar pessoas ativas separadas por tipo
       const { data: pessoas, error: pessoasError } = await supabase
         .from("pessoas")
         .select("*")
@@ -43,10 +43,13 @@ const SorteioAudiencias = () => {
 
       if (pessoasError) throw pessoasError;
 
-      if (!pessoas || pessoas.length === 0) {
+      const advogados = pessoas?.filter((p) => p.tipo === "advogado") || [];
+      const prepostos = pessoas?.filter((p) => p.tipo === "preposto") || [];
+
+      if (advogados.length === 0 || prepostos.length === 0) {
         toast({
-          title: "Nenhuma pessoa cadastrada",
-          description: "Cadastre advogados e prepostos antes de realizar o sorteio.",
+          title: "Cadastro incompleto",
+          description: "É necessário ter pelo menos 1 advogado e 1 preposto cadastrados.",
           variant: "destructive",
         });
         setLoading(false);
@@ -75,15 +78,18 @@ const SorteioAudiencias = () => {
         contagemPorPessoa.set(atr.pessoa_id, count + 1);
       });
 
-      // Filtrar pessoas que podem receber audiências (menos de 2 na semana)
-      const pessoasDisponiveis = pessoas.filter(
+      // Filtrar pessoas disponíveis (menos de 2 na semana)
+      const advogadosDisponiveis = advogados.filter(
+        (p) => (contagemPorPessoa.get(p.id) || 0) < 2
+      );
+      const prepostosDisponiveis = prepostos.filter(
         (p) => (contagemPorPessoa.get(p.id) || 0) < 2
       );
 
-      if (pessoasDisponiveis.length === 0) {
+      if (advogadosDisponiveis.length === 0 || prepostosDisponiveis.length === 0) {
         toast({
           title: "Limite atingido",
-          description: "Todas as pessoas já têm 2 audiências atribuídas nesta semana.",
+          description: "Não há advogados ou prepostos disponíveis (limite de 2 audiências/semana).",
           variant: "destructive",
         });
         setLoading(false);
@@ -94,31 +100,47 @@ const SorteioAudiencias = () => {
       const resultadoSorteio: any[] = [];
 
       for (const audiencia of audienciasPendentes) {
-        const disponiveis = pessoas.filter(
+        // Verificar disponíveis atualizados
+        const advDisponiveis = advogados.filter(
+          (p) => (contagemPorPessoa.get(p.id) || 0) < 2
+        );
+        const prepDisponiveis = prepostos.filter(
           (p) => (contagemPorPessoa.get(p.id) || 0) < 2
         );
 
-        if (disponiveis.length === 0) break;
+        if (advDisponiveis.length === 0 || prepDisponiveis.length === 0) break;
 
-        // Sortear pessoa aleatoriamente
-        const pessoaSorteada =
-          disponiveis[Math.floor(Math.random() * disponiveis.length)];
+        // Sortear 1 advogado
+        const advogadoSorteado =
+          advDisponiveis[Math.floor(Math.random() * advDisponiveis.length)];
 
+        // Sortear 1 preposto
+        const prepostoSorteado =
+          prepDisponiveis[Math.floor(Math.random() * prepDisponiveis.length)];
+
+        // Adicionar atribuição do advogado
         atribuicoes.push({
           audiencia_id: audiencia.id,
-          pessoa_id: pessoaSorteada.id,
+          pessoa_id: advogadoSorteado.id,
+          semana_inicio: inicioSemana.toISOString().split("T")[0],
+        });
+
+        // Adicionar atribuição do preposto
+        atribuicoes.push({
+          audiencia_id: audiencia.id,
+          pessoa_id: prepostoSorteado.id,
           semana_inicio: inicioSemana.toISOString().split("T")[0],
         });
 
         resultadoSorteio.push({
           processo: audiencia.numero_processo,
-          pessoa: pessoaSorteada.nome,
-          tipo: pessoaSorteada.tipo,
+          advogado: advogadoSorteado.nome,
+          preposto: prepostoSorteado.nome,
         });
 
         // Atualizar contagem
-        const count = contagemPorPessoa.get(pessoaSorteada.id) || 0;
-        contagemPorPessoa.set(pessoaSorteada.id, count + 1);
+        contagemPorPessoa.set(advogadoSorteado.id, (contagemPorPessoa.get(advogadoSorteado.id) || 0) + 1);
+        contagemPorPessoa.set(prepostoSorteado.id, (contagemPorPessoa.get(prepostoSorteado.id) || 0) + 1);
       }
 
       // Inserir atribuições no banco
@@ -207,12 +229,15 @@ const SorteioAudiencias = () => {
                   key={idx}
                   className="p-4 rounded-lg bg-success/5 border border-success/20"
                 >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-foreground">{item.processo}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {item.pessoa} ({item.tipo})
-                      </p>
+                  <p className="font-semibold text-foreground mb-2">{item.processo}</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-medium text-primary">ADVOGADO</span>
+                      <span className="text-sm text-muted-foreground">{item.advogado}</span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-medium text-secondary-foreground">PREPOSTO</span>
+                      <span className="text-sm text-muted-foreground">{item.preposto}</span>
                     </div>
                   </div>
                 </div>
