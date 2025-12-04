@@ -156,29 +156,6 @@ const DashboardHome = () => {
 
       <Card>
         <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-foreground">Próximas Audiências</h2>
-            {stats.audienciasEstaSemana === 0 && (
-              <p className="text-sm text-primary">Nenhuma audiência cadastrada para esta semana</p>
-            )}
-          </div>
-          
-          {stats.audienciasEstaSemana === 0 ? (
-            <div className="py-12 text-center">
-              <Calendar className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
-              <h3 className="text-lg font-semibold text-muted-foreground mb-2">Nenhuma audiência cadastrada</h3>
-              <p className="text-muted-foreground">Cadastre audiências na aba "Audiências"</p>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">Verifique a aba "Audiências" para ver os detalhes</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-6">
           <h2 className="text-xl font-bold text-foreground mb-4">Resumo da Semana</h2>
           <div className="space-y-3">
             <div className="flex items-center justify-between py-2 border-b">
