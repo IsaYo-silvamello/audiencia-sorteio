@@ -221,7 +221,7 @@ const NovaAudienciaForm = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="link">Link</Label>
+            <Label htmlFor="link">Link da Audiência</Label>
             <Textarea
               id="link"
               placeholder="Cole o link aqui"
