@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, FileText, Users, Search, Trash2 } from "lucide-react";
+import { Calendar, Clock, FileText, Users, Search, Trash2, ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,6 +25,7 @@ interface Audiencia {
   reu: string;
   assunto: string;
   status: string;
+  link?: string | null;
   atribuicoes?: Array<{
     pessoa: {
       id: string;
@@ -351,6 +353,19 @@ const AudienciasList = () => {
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+                {audiencia.link && (
+                  <div className="pt-2 border-t">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => window.open(audiencia.link!, '_blank')}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Abrir Link da Audiência
+                    </Button>
                   </div>
                 )}
               </CardContent>
