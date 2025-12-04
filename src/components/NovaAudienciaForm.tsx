@@ -92,6 +92,7 @@ const NovaAudienciaForm = () => {
     autor: "",
     reu: "",
     assunto: "",
+    link: "",
   });
   const { toast } = useToast();
 
@@ -124,6 +125,7 @@ const NovaAudienciaForm = () => {
         autor: "",
         reu: "",
         assunto: "",
+        link: "",
       });
     } catch (error: any) {
       toast({
@@ -214,6 +216,17 @@ const NovaAudienciaForm = () => {
               value={formData.reu}
               onChange={(e) => setFormData({ ...formData, reu: e.target.value })}
               required
+              rows={2}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="link">Link</Label>
+            <Textarea
+              id="link"
+              placeholder="Cole o link aqui"
+              value={formData.link}
+              onChange={(e) => setFormData({ ...formData, link: e.target.value })}
               rows={2}
             />
           </div>
