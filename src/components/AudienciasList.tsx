@@ -62,25 +62,33 @@ const AudienciasList = () => {
 
       if (error) throw error;
       
-      // Fetch pessoas data separately to get OAB/CPF
+      // Normalize atribuicoes to always be an array and fetch pessoas data
       const audienciasWithPessoas = await Promise.all(
         (data || []).map(async (aud: any) => {
-          if (aud.atribuicoes?.length > 0) {
-            const pessoaIds = aud.atribuicoes.map((atr: any) => atr.pessoa.id);
-            const { data: pessoasData } = await supabase
-              .from("pessoas")
-              .select("id, nome, tipo, documento")
-              .in("id", pessoaIds);
-            
-            return {
-              ...aud,
-              atribuicoes: aud.atribuicoes.map((atr: any) => ({
-                ...atr,
-                pessoa: pessoasData?.find((p) => p.id === atr.pessoa.id) || atr.pessoa,
-              })),
-            };
+          // Normalize atribuicoes to array
+          let atribuicoesArray = aud.atribuicoes;
+          if (atribuicoesArray && !Array.isArray(atribuicoesArray)) {
+            atribuicoesArray = [atribuicoesArray];
           }
-          return aud;
+          
+          if (atribuicoesArray?.length > 0) {
+            const pessoaIds = atribuicoesArray.map((atr: any) => atr.pessoa?.id).filter(Boolean);
+            if (pessoaIds.length > 0) {
+              const { data: pessoasData } = await supabase
+                .from("pessoas")
+                .select("id, nome, tipo, documento")
+                .in("id", pessoaIds);
+              
+              return {
+                ...aud,
+                atribuicoes: atribuicoesArray.map((atr: any) => ({
+                  ...atr,
+                  pessoa: pessoasData?.find((p) => p.id === atr.pessoa?.id) || atr.pessoa,
+                })),
+              };
+            }
+          }
+          return { ...aud, atribuicoes: atribuicoesArray || [] };
         })
       );
       
@@ -317,16 +325,14 @@ const AudienciasList = () => {
                   <p className="text-sm font-medium text-foreground mb-1">Assunto</p>
                   <p className="text-sm text-muted-foreground">{audiencia.assunto}</p>
                 </div>
-                {audiencia.atribuicoes && (
-                  Array.isArray(audiencia.atribuicoes) ? audiencia.atribuicoes.length > 0 : audiencia.atribuicoes
-                ) && (
+                {audiencia.atribuicoes && audiencia.atribuicoes.length > 0 && (
                   <div className="pt-2 border-t">
                     <p className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
                       <Users className="h-4 w-4" />
                       Atribuído a:
                     </p>
                     <div className="flex flex-wrap gap-3">
-                      {(Array.isArray(audiencia.atribuicoes) ? audiencia.atribuicoes : [audiencia.atribuicoes]).map((atr: any, idx: number) => (
+                      {audiencia.atribuicoes.map((atr: any, idx: number) => (
                         <div key={idx} className="flex flex-col gap-1 p-2 bg-muted/50 rounded-md">
                           <Badge 
                             variant={atr.pessoa?.tipo === 'advogado' ? 'default' : 'secondary'}
