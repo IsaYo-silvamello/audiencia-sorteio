@@ -171,6 +171,9 @@ const AudienciasList = () => {
         .eq("id", id);
       if (error) throw error;
 
+      // Update local state immediately
+      setAudiencias((prev) => prev.filter((aud) => aud.id !== id));
+
       toast({
         title: "Audiência excluída",
         description: "A audiência foi removida com sucesso.",
