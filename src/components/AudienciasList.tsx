@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, FileText, Users, Search } from "lucide-react";
+import { Calendar, Clock, FileText, Users, Search, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import {
@@ -160,6 +160,38 @@ const AudienciasList = () => {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    try {
+      // First delete related atribuicoes
+      await supabase.from("atribuicoes").delete().eq("audiencia_id", id);
+      
+      const { error } = await supabase
+        .from("audiencias")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+
+      toast({
+        title: "Audiência excluída",
+        description: "A audiência foi removida com sucesso.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao excluir audiência",
+        description: error.message,
+      });
+    }
+  };
+
+  const handleTratarChange = (id: string, value: string) => {
+    if (value === "excluir") {
+      handleDelete(id);
+    } else {
+      handleStatusChange(id, value);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pendente":
@@ -248,7 +280,7 @@ const AudienciasList = () => {
                   <div className="flex items-center gap-3">
                     {getStatusBadge(audiencia.status)}
                     <Select
-                      onValueChange={(value) => handleStatusChange(audiencia.id, value)}
+                      onValueChange={(value) => handleTratarChange(audiencia.id, value)}
                     >
                       <SelectTrigger className="w-[140px]">
                         <SelectValue placeholder="Tratar" />
@@ -256,6 +288,12 @@ const AudienciasList = () => {
                       <SelectContent>
                         <SelectItem value="realizada">Realizado</SelectItem>
                         <SelectItem value="nao_realizada">Não Realizado</SelectItem>
+                        <SelectItem value="excluir" className="text-destructive">
+                          <span className="flex items-center gap-2">
+                            <Trash2 className="h-4 w-4" />
+                            Excluir
+                          </span>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
