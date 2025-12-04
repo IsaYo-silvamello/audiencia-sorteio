@@ -317,21 +317,29 @@ const AudienciasList = () => {
                   <p className="text-sm font-medium text-foreground mb-1">Assunto</p>
                   <p className="text-sm text-muted-foreground">{audiencia.assunto}</p>
                 </div>
-                {audiencia.atribuicoes && audiencia.atribuicoes.length > 0 && (
+                {audiencia.atribuicoes && (
+                  Array.isArray(audiencia.atribuicoes) ? audiencia.atribuicoes.length > 0 : audiencia.atribuicoes
+                ) && (
                   <div className="pt-2 border-t">
                     <p className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
                       <Users className="h-4 w-4" />
                       Atribuído a:
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                      {audiencia.atribuicoes.map((atr: any, idx: number) => (
-                        <div key={idx} className="flex flex-col gap-1">
-                          <Badge variant="secondary">
-                            {atr.pessoa.nome} ({atr.pessoa.tipo})
+                    <div className="flex flex-wrap gap-3">
+                      {(Array.isArray(audiencia.atribuicoes) ? audiencia.atribuicoes : [audiencia.atribuicoes]).map((atr: any, idx: number) => (
+                        <div key={idx} className="flex flex-col gap-1 p-2 bg-muted/50 rounded-md">
+                          <Badge 
+                            variant={atr.pessoa?.tipo === 'advogado' ? 'default' : 'secondary'}
+                            className="justify-center"
+                          >
+                            {atr.pessoa?.tipo === 'advogado' ? 'ADVOGADO' : 'PREPOSTO'}
                           </Badge>
-                          {atr.pessoa.documento && (
-                            <span className="text-xs text-muted-foreground ml-1">
-                              {atr.pessoa.tipo === 'advogado' ? 'OAB' : 'CPF'}: {atr.pessoa.documento}
+                          <span className="text-sm font-medium text-foreground">
+                            {atr.pessoa?.nome}
+                          </span>
+                          {atr.pessoa?.documento && (
+                            <span className="text-xs text-muted-foreground">
+                              {atr.pessoa?.tipo === 'advogado' ? 'OAB' : 'CPF'}: {atr.pessoa?.documento}
                             </span>
                           )}
                         </div>
