@@ -334,7 +334,13 @@ const AudienciasList = () => {
                       Atribuído a:
                     </p>
                     <div className="flex flex-wrap gap-3">
-                      {audiencia.atribuicoes.map((atr: any, idx: number) => (
+                      {[...audiencia.atribuicoes]
+                        .sort((a: any, b: any) => {
+                          if (a.pessoa?.tipo === 'advogado') return -1;
+                          if (b.pessoa?.tipo === 'advogado') return 1;
+                          return 0;
+                        })
+                        .map((atr: any, idx: number) => (
                         <div key={idx} className="flex flex-col gap-1 p-2 bg-muted/50 rounded-md">
                           <Badge 
                             variant={atr.pessoa?.tipo === 'advogado' ? 'default' : 'secondary'}
