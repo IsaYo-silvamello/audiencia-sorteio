@@ -359,7 +359,102 @@ const AudienciasList = () => {
         inserted += batch.length;
       }
 
-      toast({ title: "Importação concluída", description: `${inserted} audiências importadas com sucesso.` });
+      // === SORTEIO AUTOMÁTICO PÓS-IMPORTAÇÃO ===
+      // Buscar audiências recém-inseridas (todas pendentes)
+      const { data: audienciasImportadas, error: fetchErr } = await supabase
+        .from("audiencias")
+        .select("*")
+        .eq("status", "pendente");
+      if (fetchErr) throw fetchErr;
+
+      // Buscar pessoas ativas
+      const { data: pessoas, error: pessoasErr } = await supabase
+        .from("pessoas")
+        .select("*")
+        .eq("ativo", true);
+      if (pessoasErr) throw pessoasErr;
+
+      const advogados = pessoas?.filter((p) => p.tipo === "advogado") || [];
+      const prepostos = pessoas?.filter((p) => p.tipo === "preposto") || [];
+
+      // Calcular início da semana
+      const hoje = new Date();
+      const diaSemana = hoje.getDay();
+      const inicioSemana = new Date(hoje);
+      inicioSemana.setDate(hoje.getDate() - diaSemana);
+      inicioSemana.setHours(0, 0, 0, 0);
+      const semanaInicioStr = inicioSemana.toISOString().split("T")[0];
+
+      // Contagem de atribuições na semana
+      const contagemPorPessoa = new Map<string, number>();
+
+      const atribuicoes: Array<{ audiencia_id: string; pessoa_id: string; semana_inicio: string }> = [];
+      const audienciasPresenciais: Array<{ id: string; observacoes: string }> = [];
+      const audienciasAtribuidas: string[] = [];
+      let presenciaisCount = 0;
+
+      for (const audiencia of (audienciasImportadas || [])) {
+        if (isPresencial(audiencia)) {
+          // Audiência presencial: não sorteia, marca equipe correspondente
+          presenciaisCount++;
+          const uf = extrairUF(audiencia.numero_processo);
+          const equipe = getEquipeCorrespondente(uf);
+          const ufLabel = uf ? ` (${uf})` : "";
+          const obs = `⚠️ PRESENCIAL${ufLabel} - Contatar ${equipe} para contratação de correspondente`;
+          audienciasPresenciais.push({ id: audiencia.id, observacoes: obs });
+        } else {
+          // Audiência virtual: sortear advogado + preposto
+          const advDisponiveis = advogados.filter(
+            (p) => (contagemPorPessoa.get(p.id) || 0) < 2
+          );
+          const prepDisponiveis = prepostos.filter(
+            (p) => (contagemPorPessoa.get(p.id) || 0) < 2
+          );
+
+          if (advDisponiveis.length > 0 && prepDisponiveis.length > 0) {
+            const advSorteado = advDisponiveis[Math.floor(Math.random() * advDisponiveis.length)];
+            const prepSorteado = prepDisponiveis[Math.floor(Math.random() * prepDisponiveis.length)];
+
+            atribuicoes.push(
+              { audiencia_id: audiencia.id, pessoa_id: advSorteado.id, semana_inicio: semanaInicioStr },
+              { audiencia_id: audiencia.id, pessoa_id: prepSorteado.id, semana_inicio: semanaInicioStr }
+            );
+            audienciasAtribuidas.push(audiencia.id);
+
+            contagemPorPessoa.set(advSorteado.id, (contagemPorPessoa.get(advSorteado.id) || 0) + 1);
+            contagemPorPessoa.set(prepSorteado.id, (contagemPorPessoa.get(prepSorteado.id) || 0) + 1);
+          }
+        }
+      }
+
+      // Inserir atribuições
+      if (atribuicoes.length > 0) {
+        const { error: insertErr } = await supabase.from("atribuicoes").insert(atribuicoes);
+        if (insertErr) throw insertErr;
+      }
+
+      // Atualizar status das audiências atribuídas
+      if (audienciasAtribuidas.length > 0) {
+        const { error: updateErr } = await supabase
+          .from("audiencias")
+          .update({ status: "atribuida" })
+          .in("id", audienciasAtribuidas);
+        if (updateErr) throw updateErr;
+      }
+
+      // Atualizar observações das audiências presenciais
+      for (const ap of audienciasPresenciais) {
+        await supabase
+          .from("audiencias")
+          .update({ observacoes: ap.observacoes })
+          .eq("id", ap.id);
+      }
+
+      const msgs: string[] = [`${inserted} audiências importadas.`];
+      if (audienciasAtribuidas.length > 0) msgs.push(`${audienciasAtribuidas.length} sorteadas (advogado + preposto).`);
+      if (presenciaisCount > 0) msgs.push(`${presenciaisCount} presenciais (correspondente).`);
+
+      toast({ title: "Importação e sorteio concluídos", description: msgs.join(" ") });
       setPendingRows([]);
       fetchAudiencias();
     } catch (err: any) {
