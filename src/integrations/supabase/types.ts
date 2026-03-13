@@ -71,6 +71,7 @@ export type Database = {
           foro: string | null
           hora_audiencia: string | null
           id: string
+          id_planilha: string | null
           link: string | null
           local: string | null
           npc_dossie: string | null
@@ -98,6 +99,7 @@ export type Database = {
           foro?: string | null
           hora_audiencia?: string | null
           id?: string
+          id_planilha?: string | null
           link?: string | null
           local?: string | null
           npc_dossie?: string | null
@@ -125,6 +127,7 @@ export type Database = {
           foro?: string | null
           hora_audiencia?: string | null
           id?: string
+          id_planilha?: string | null
           link?: string | null
           local?: string | null
           npc_dossie?: string | null
