@@ -75,7 +75,7 @@ interface Audiencia {
 }
 
 const HEADER_MAP: Record<string, string> = {
-  "ID": "id",
+  "ID": "id_planilha",
   "NPC/DOSSIÊ": "npc_dossie",
   "NPC/DOSSIE": "npc_dossie",
   "AUTOR": "autor",
