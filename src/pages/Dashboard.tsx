@@ -8,15 +8,15 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card px-6 py-4">
+      <header className="border-b px-6 py-4 bg-sky-100">
         <div className="flex items-center justify-between max-w-[1400px] mx-auto">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
               <Scale className="h-6 w-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-foreground">Juris Audiências</h1>
-              <p className="text-xs text-muted-foreground">Sistema de Gestão</p>
+              <h1 className="text-lg font-bold text-foreground">Smaart Aud </h1>
+              <p className="text-xs text-muted-foreground">Sistema de Pauta de Audiências     </p>
             </div>
           </div>
         </div>
@@ -52,8 +52,8 @@ const Dashboard = () => {
           </TabsContent>
         </Tabs>
       </main>
-    </div>
-  );
+    </div>);
+
 };
 
 export default Dashboard;
