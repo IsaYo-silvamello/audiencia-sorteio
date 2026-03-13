@@ -571,6 +571,84 @@ const AudienciasList = () => {
     }
   };
 
+  const handleExportarPlanilha = () => {
+    const headers = [
+      "NPC/DOSSIÊ", "Autor", "Processo", "Data", "Horário", "Tipo da Audiência",
+      "Foro", "Comarca", "Assunto", "Carteira", "Status", "Local",
+      "Advogado (Original)", "Preposto (Original)", "Estratégia", "Estratégia SMAA",
+      "Cliente (Réu)", "Adv Responsável", "Observações", "Documentação", "Link",
+      "Adv do Autor", "Contato Cartório", "Advogado Atribuído", "Preposto Atribuído"
+    ];
+
+    const rows = filteredAudiencias.map((aud) => {
+      const advAtribuido = aud.atribuicoes?.find((a: any) => a.pessoa?.tipo === "advogado")?.pessoa?.nome || "";
+      const prepAtribuido = aud.atribuicoes?.find((a: any) => a.pessoa?.tipo === "preposto")?.pessoa?.nome || "";
+
+      return [
+        aud.npc_dossie || "",
+        aud.autor || "",
+        aud.numero_processo || "",
+        aud.data_audiencia || "",
+        aud.hora_audiencia || "",
+        aud.tipo_audiencia || "",
+        aud.foro || "",
+        aud.comarca || "",
+        aud.assunto || "",
+        aud.carteira || "",
+        aud.status || "",
+        aud.local || "",
+        aud.advogado || "",
+        aud.preposto || "",
+        aud.estrategia || "",
+        aud.estrategia_smaa || "",
+        aud.reu || "",
+        aud.adv_responsavel || "",
+        aud.observacoes || "",
+        aud.documentacao || "",
+        aud.link || "",
+        aud.adv_do_autor || "",
+        aud.contato_cartorio || "",
+        advAtribuido,
+        prepAtribuido,
+      ];
+    });
+
+    const wsData = [headers, ...rows];
+    const ws = XLSXStyle.utils.aoa_to_sheet(wsData);
+
+    // Style header row bold
+    headers.forEach((_, colIdx) => {
+      const cellRef = XLSXStyle.utils.encode_cell({ r: 0, c: colIdx });
+      if (ws[cellRef]) {
+        ws[cellRef].s = { font: { bold: true } };
+      }
+    });
+
+    // Highlight yellow cells where there's correspondent info (presencial)
+    const obsColIdx = headers.indexOf("Observações");
+    filteredAudiencias.forEach((aud, rowIdx) => {
+      const isCorrespondente = isPresencial(aud) || (aud.observacoes || "").includes("correspondente");
+      if (isCorrespondente) {
+        // Highlight the entire row's "Observações" cell yellow
+        const cellRef = XLSXStyle.utils.encode_cell({ r: rowIdx + 1, c: obsColIdx });
+        if (ws[cellRef]) {
+          ws[cellRef].s = {
+            fill: { fgColor: { rgb: "FFFF00" } },
+          };
+        }
+      }
+    });
+
+    // Auto column widths
+    ws["!cols"] = headers.map((h) => ({ wch: Math.max(h.length + 2, 15) }));
+
+    const wb = XLSXStyle.utils.book_new();
+    XLSXStyle.utils.book_append_sheet(wb, ws, "Audiências");
+    XLSXStyle.writeFile(wb, `audiencias_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+
+    toast({ title: "Planilha exportada com sucesso!" });
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pendente":
