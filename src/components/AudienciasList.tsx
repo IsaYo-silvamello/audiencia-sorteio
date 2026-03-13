@@ -130,6 +130,7 @@ function getEquipeCorrespondente(uf: string | null): string {
   return "Equipe Thiago"; // SP, Região Sul, demais estados
 }
 
+function parseExcelDate(value: any): string | null {
   if (!value) return null;
   // Excel serial number (numeric)
   if (typeof value === "number") {
