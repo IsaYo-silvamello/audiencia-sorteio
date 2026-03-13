@@ -101,7 +101,7 @@ const HEADER_MAP: Record<string, string> = {
 
 function parseExcelDate(value: any): string | null {
   if (!value) return null;
-  // Excel serial number
+  // Excel serial number (numeric)
   if (typeof value === "number") {
     const date = XLSX.SSF.parse_date_code(value);
     if (date) {
@@ -111,6 +111,15 @@ function parseExcelDate(value: any): string | null {
     }
   }
   const s = String(value).trim();
+  // Excel serial number as string (e.g. "46097")
+  if (/^\d+$/.test(s) && Number(s) > 1000) {
+    const date = XLSX.SSF.parse_date_code(Number(s));
+    if (date) {
+      const m = String(date.m).padStart(2, "0");
+      const d = String(date.d).padStart(2, "0");
+      return `${date.y}-${m}-${d}`;
+    }
+  }
   // dd/mm/yyyy
   const match = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
   if (match) return `${match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}`;
@@ -128,6 +137,13 @@ function parseExcelTime(value: any): string | null {
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
   }
   const s = String(value).trim();
+  // Decimal string representing time fraction (e.g. "0.75" = 18:00)
+  if (/^\d*\.\d+$/.test(s)) {
+    const totalSeconds = Math.round(Number(s) * 86400);
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  }
   const match = s.match(/(\d{1,2}):(\d{2})/);
   if (match) return `${match[1].padStart(2, "0")}:${match[2]}`;
   return s || null;
