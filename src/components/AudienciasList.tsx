@@ -40,6 +40,7 @@ import XLSXStyle from "xlsx-js-style";
 
 interface Audiencia {
   id: string;
+  id_planilha?: string | null;
   numero_processo: string;
   data_audiencia: string;
   hora_audiencia: string;
