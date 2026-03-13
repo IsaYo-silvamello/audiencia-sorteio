@@ -512,13 +512,6 @@ const AudienciasList = () => {
     }
   };
 
-  const handleTratarChange = (id: string, value: string) => {
-    if (value === "excluir") {
-      handleDelete(id);
-    } else {
-      handleStatusChange(id, value);
-    }
-  };
 
   const openEditAudiencia = (aud: Audiencia) => {
     setEditAudiencia(aud);
