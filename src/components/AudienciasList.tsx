@@ -575,7 +575,7 @@ const AudienciasList = () => {
     const headers = [
       "NPC/DOSSIÊ", "Autor", "Processo", "Data", "Horário", "Tipo da Audiência",
       "Foro", "Comarca", "Assunto", "Carteira", "Status", "Local",
-      "Advogado (Original)", "Preposto (Original)", "Estratégia", "Estratégia SMAA",
+      "Estratégia", "Estratégia SMAA",
       "Cliente (Réu)", "Adv Responsável", "Observações", "Documentação", "Link",
       "Adv do Autor", "Contato Cartório", "Advogado Atribuído", "Preposto Atribuído"
     ];
@@ -597,8 +597,6 @@ const AudienciasList = () => {
         aud.carteira || "",
         aud.status || "",
         aud.local || "",
-        aud.advogado || "",
-        aud.preposto || "",
         aud.estrategia || "",
         aud.estrategia_smaa || "",
         aud.reu || "",
