@@ -36,6 +36,7 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx";
+import XLSXStyle from "xlsx-js-style";
 
 interface Audiencia {
   id: string;
