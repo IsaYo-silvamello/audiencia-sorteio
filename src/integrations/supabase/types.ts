@@ -142,6 +142,7 @@ export type Database = {
           ativo: boolean
           created_at: string
           documento: string | null
+          equipe: string | null
           estado: string | null
           id: string
           nome: string
@@ -153,6 +154,7 @@ export type Database = {
           ativo?: boolean
           created_at?: string
           documento?: string | null
+          equipe?: string | null
           estado?: string | null
           id?: string
           nome: string
@@ -164,6 +166,7 @@ export type Database = {
           ativo?: boolean
           created_at?: string
           documento?: string | null
+          equipe?: string | null
           estado?: string | null
           id?: string
           nome?: string
