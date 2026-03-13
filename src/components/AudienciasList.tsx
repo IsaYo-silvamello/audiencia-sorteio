@@ -40,6 +40,7 @@ import XLSXStyle from "xlsx-js-style";
 
 interface Audiencia {
   id: string;
+  id_planilha?: string | null;
   numero_processo: string;
   data_audiencia: string;
   hora_audiencia: string;
@@ -74,7 +75,7 @@ interface Audiencia {
 }
 
 const HEADER_MAP: Record<string, string> = {
-  "ID": "id",
+  "ID": "id_planilha",
   "NPC/DOSSIÊ": "npc_dossie",
   "NPC/DOSSIE": "npc_dossie",
   "AUTOR": "autor",
@@ -324,7 +325,7 @@ const AudienciasList = () => {
         const obj: any = {};
         headers.forEach((h) => {
           const key = HEADER_MAP[h.toUpperCase().trim()];
-          if (key && key !== "id") {
+          if (key) {
             obj[key] = row[h] !== undefined && row[h] !== "" ? String(row[h]) : null;
           }
         });
@@ -585,7 +586,7 @@ const AudienciasList = () => {
       const prepAtribuido = aud.atribuicoes?.find((a: any) => a.pessoa?.tipo === "preposto")?.pessoa?.nome || "";
 
       return [
-        idx + 1,
+        aud.id_planilha || "",
         aud.npc_dossie || "",
         aud.autor || "",
         aud.numero_processo || "",
@@ -744,6 +745,7 @@ const AudienciasList = () => {
                   <div className="space-y-2 flex-1">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <FileText className="h-5 w-5 text-primary" />
+                      {audiencia.id_planilha && <span className="text-muted-foreground font-normal text-sm">#{audiencia.id_planilha}</span>}
                       {audiencia.numero_processo || "Sem processo"}
                     </CardTitle>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">

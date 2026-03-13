@@ -1,0 +1,1 @@
+ALTER TABLE public.audiencias ADD COLUMN id_planilha text NULL;
