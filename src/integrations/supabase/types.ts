@@ -55,40 +55,85 @@ export type Database = {
       }
       audiencias: {
         Row: {
-          assunto: string
+          adv_do_autor: string | null
+          adv_responsavel: string | null
+          advogado: string | null
+          assunto: string | null
           autor: string
+          carteira: string | null
+          comarca: string | null
+          contato_cartorio: string | null
           created_at: string
-          data_audiencia: string
-          hora_audiencia: string
+          data_audiencia: string | null
+          documentacao: string | null
+          estrategia: string | null
+          estrategia_smaa: string | null
+          foro: string | null
+          hora_audiencia: string | null
           id: string
           link: string | null
-          numero_processo: string
+          local: string | null
+          npc_dossie: string | null
+          numero_processo: string | null
+          observacoes: string | null
+          preposto: string | null
           reu: string
           status: string
+          tipo_audiencia: string | null
         }
         Insert: {
-          assunto: string
+          adv_do_autor?: string | null
+          adv_responsavel?: string | null
+          advogado?: string | null
+          assunto?: string | null
           autor?: string
+          carteira?: string | null
+          comarca?: string | null
+          contato_cartorio?: string | null
           created_at?: string
-          data_audiencia: string
-          hora_audiencia: string
+          data_audiencia?: string | null
+          documentacao?: string | null
+          estrategia?: string | null
+          estrategia_smaa?: string | null
+          foro?: string | null
+          hora_audiencia?: string | null
           id?: string
           link?: string | null
-          numero_processo: string
+          local?: string | null
+          npc_dossie?: string | null
+          numero_processo?: string | null
+          observacoes?: string | null
+          preposto?: string | null
           reu?: string
           status?: string
+          tipo_audiencia?: string | null
         }
         Update: {
-          assunto?: string
+          adv_do_autor?: string | null
+          adv_responsavel?: string | null
+          advogado?: string | null
+          assunto?: string | null
           autor?: string
+          carteira?: string | null
+          comarca?: string | null
+          contato_cartorio?: string | null
           created_at?: string
-          data_audiencia?: string
-          hora_audiencia?: string
+          data_audiencia?: string | null
+          documentacao?: string | null
+          estrategia?: string | null
+          estrategia_smaa?: string | null
+          foro?: string | null
+          hora_audiencia?: string | null
           id?: string
           link?: string | null
-          numero_processo?: string
+          local?: string | null
+          npc_dossie?: string | null
+          numero_processo?: string | null
+          observacoes?: string | null
+          preposto?: string | null
           reu?: string
           status?: string
+          tipo_audiencia?: string | null
         }
         Relationships: []
       }
