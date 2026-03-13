@@ -512,13 +512,6 @@ const AudienciasList = () => {
     }
   };
 
-  const handleTratarChange = (id: string, value: string) => {
-    if (value === "excluir") {
-      handleDelete(id);
-    } else {
-      handleStatusChange(id, value);
-    }
-  };
 
   const openEditAudiencia = (aud: Audiencia) => {
     setEditAudiencia(aud);
@@ -691,23 +684,6 @@ const AudienciasList = () => {
                     <Button variant="ghost" size="icon" onClick={() => openEditAudiencia(audiencia)}>
                       <Pencil className="h-4 w-4 text-muted-foreground" />
                     </Button>
-                    <Select
-                      onValueChange={(value) => handleTratarChange(audiencia.id, value)}
-                    >
-                      <SelectTrigger className="w-[140px]">
-                        <SelectValue placeholder="Tratar" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="realizada">Realizado</SelectItem>
-                        <SelectItem value="nao_realizada">Não Realizado</SelectItem>
-                        <SelectItem value="excluir" className="text-destructive">
-                          <span className="flex items-center gap-2">
-                            <Trash2 className="h-4 w-4" />
-                            Excluir
-                          </span>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
                 </div>
               </CardHeader>
