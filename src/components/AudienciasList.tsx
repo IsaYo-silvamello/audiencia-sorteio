@@ -293,7 +293,9 @@ const AudienciasList = () => {
         if (obj.data_audiencia) obj.data_audiencia = parseExcelDate(obj.data_audiencia);
         if (obj.hora_audiencia) obj.hora_audiencia = parseExcelTime(obj.hora_audiencia);
         // Defaults
-        if (!obj.status) obj.status = "pendente";
+        const ALLOWED_STATUSES = ['pendente', 'atribuida', 'realizada'];
+        const rawStatus = (obj.status || '').toString().toLowerCase().trim();
+        obj.status = ALLOWED_STATUSES.includes(rawStatus) ? rawStatus : 'pendente';
         if (!obj.autor) obj.autor = "";
         if (!obj.reu) obj.reu = "";
         return obj;
