@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, FileText, Users, Search, Trash2, ExternalLink } from "lucide-react";
+import { Calendar, Clock, FileText, Users, Search, Trash2, ExternalLink, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -13,8 +13,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import * as XLSX from "xlsx";
 
 interface Audiencia {
   id: string;
@@ -26,6 +37,21 @@ interface Audiencia {
   assunto: string;
   status: string;
   link?: string | null;
+  npc_dossie?: string | null;
+  tipo_audiencia?: string | null;
+  foro?: string | null;
+  comarca?: string | null;
+  carteira?: string | null;
+  local?: string | null;
+  advogado?: string | null;
+  preposto?: string | null;
+  estrategia?: string | null;
+  estrategia_smaa?: string | null;
+  adv_responsavel?: string | null;
+  observacoes?: string | null;
+  documentacao?: string | null;
+  adv_do_autor?: string | null;
+  contato_cartorio?: string | null;
   atribuicoes?: Array<{
     pessoa: {
       id: string;
@@ -36,12 +62,87 @@ interface Audiencia {
   }>;
 }
 
+const HEADER_MAP: Record<string, string> = {
+  "ID": "id",
+  "NPC/DOSSIÊ": "npc_dossie",
+  "NPC/DOSSIE": "npc_dossie",
+  "AUTOR": "autor",
+  "PROCESSO": "numero_processo",
+  "DATA": "data_audiencia",
+  "HORÁRIO": "hora_audiencia",
+  "HORARIO": "hora_audiencia",
+  "TIPO DA AUDIENCIA": "tipo_audiencia",
+  "TIPO DA AUDIÊNCIA": "tipo_audiencia",
+  "FORO": "foro",
+  "COMARCA": "comarca",
+  "ASSUNTO": "assunto",
+  "CARTEIRA": "carteira",
+  "STATUS": "status",
+  "LOCAL": "local",
+  "ADVOGADO": "advogado",
+  "PREPOSTO": "preposto",
+  "ESTRATÉGIA": "estrategia",
+  "ESTRATEGIA": "estrategia",
+  "ESTRATÉGIA SMAA": "estrategia_smaa",
+  "ESTRATEGIA SMAA": "estrategia_smaa",
+  "CLIENTE (RÉU)": "reu",
+  "CLIENTE (REU)": "reu",
+  "ADV RESPONSAVEL": "adv_responsavel",
+  "ADV RESPONSÁVEL": "adv_responsavel",
+  "OBSERVAÇÕES": "observacoes",
+  "OBSERVACOES": "observacoes",
+  "DOCUMENTAÇÃO": "documentacao",
+  "DOCUMENTACAO": "documentacao",
+  "LINK": "link",
+  "ADV DO AUTOR": "adv_do_autor",
+  "CONTATO CARTORIO": "contato_cartorio",
+  "CONTATO CARTÓRIO": "contato_cartorio",
+};
+
+function parseExcelDate(value: any): string | null {
+  if (!value) return null;
+  // Excel serial number
+  if (typeof value === "number") {
+    const date = XLSX.SSF.parse_date_code(value);
+    if (date) {
+      const m = String(date.m).padStart(2, "0");
+      const d = String(date.d).padStart(2, "0");
+      return `${date.y}-${m}-${d}`;
+    }
+  }
+  const s = String(value).trim();
+  // dd/mm/yyyy
+  const match = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (match) return `${match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}`;
+  // yyyy-mm-dd
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  return s || null;
+}
+
+function parseExcelTime(value: any): string | null {
+  if (!value) return null;
+  if (typeof value === "number") {
+    const totalSeconds = Math.round(value * 86400);
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  }
+  const s = String(value).trim();
+  const match = s.match(/(\d{1,2}):(\d{2})/);
+  if (match) return `${match[1].padStart(2, "0")}:${match[2]}`;
+  return s || null;
+}
+
 const AudienciasList = () => {
   const [audiencias, setAudiencias] = useState<Audiencia[]>([]);
   const [filteredAudiencias, setFilteredAudiencias] = useState<Audiencia[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchNome, setSearchNome] = useState("");
   const [searchDoc, setSearchDoc] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pendingRows, setPendingRows] = useState<any[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const fetchAudiencias = async () => {
@@ -64,10 +165,8 @@ const AudienciasList = () => {
 
       if (error) throw error;
       
-      // Normalize atribuicoes to always be an array and fetch pessoas data
       const audienciasWithPessoas = await Promise.all(
         (data || []).map(async (aud: any) => {
-          // Normalize atribuicoes to array
           let atribuicoesArray = aud.atribuicoes;
           if (atribuicoesArray && !Array.isArray(atribuicoesArray)) {
             atribuicoesArray = [atribuicoesArray];
@@ -149,6 +248,78 @@ const AudienciasList = () => {
     };
   }, []);
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+      if (jsonData.length === 0) {
+        toast({ variant: "destructive", title: "Planilha vazia", description: "Nenhuma linha encontrada." });
+        return;
+      }
+
+      // Map headers
+      const headers = Object.keys(jsonData[0] as any);
+      const mapped = jsonData.map((row: any) => {
+        const obj: any = {};
+        headers.forEach((h) => {
+          const key = HEADER_MAP[h.toUpperCase().trim()];
+          if (key && key !== "id") {
+            obj[key] = row[h] !== undefined && row[h] !== "" ? String(row[h]) : null;
+          }
+        });
+        // Parse date and time
+        if (obj.data_audiencia) obj.data_audiencia = parseExcelDate(obj.data_audiencia);
+        if (obj.hora_audiencia) obj.hora_audiencia = parseExcelTime(obj.hora_audiencia);
+        // Defaults
+        if (!obj.status) obj.status = "pendente";
+        if (!obj.autor) obj.autor = "";
+        if (!obj.reu) obj.reu = "";
+        return obj;
+      });
+
+      setPendingRows(mapped);
+      setShowConfirm(true);
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Erro ao ler planilha", description: err.message });
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    setShowConfirm(false);
+    setImporting(true);
+    try {
+      // Delete all atribuicoes first, then audiencias
+      await supabase.from("atribuicoes").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabase.from("audiencias").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+
+      // Insert in batches of 100
+      const batchSize = 100;
+      let inserted = 0;
+      for (let i = 0; i < pendingRows.length; i += batchSize) {
+        const batch = pendingRows.slice(i, i + batchSize);
+        const { error } = await supabase.from("audiencias").insert(batch as any);
+        if (error) throw error;
+        inserted += batch.length;
+      }
+
+      toast({ title: "Importação concluída", description: `${inserted} audiências importadas com sucesso.` });
+      setPendingRows([]);
+      fetchAudiencias();
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Erro na importação", description: err.message });
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
       const { error } = await supabase
@@ -172,7 +343,6 @@ const AudienciasList = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      // First delete related atribuicoes
       await supabase.from("atribuicoes").delete().eq("audiencia_id", id);
       
       const { error } = await supabase
@@ -181,7 +351,6 @@ const AudienciasList = () => {
         .eq("id", id);
       if (error) throw error;
 
-      // Update local state immediately
       setAudiencias((prev) => prev.filter((aud) => aud.id !== id));
 
       toast({
@@ -228,9 +397,26 @@ const AudienciasList = () => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-foreground">Audiências Cadastradas</h2>
-        <Badge variant="outline" className="text-lg px-4 py-2">
-          {filteredAudiencias.length} audiências
-        </Badge>
+        <div className="flex items-center gap-3">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            className="hidden"
+            onChange={handleFileSelect}
+          />
+          <Button
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importing}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            {importing ? "Importando..." : "Importar Planilha"}
+          </Button>
+          <Badge variant="outline" className="text-lg px-4 py-2">
+            {filteredAudiencias.length} audiências
+          </Badge>
+        </div>
       </div>
 
       <Card>
@@ -264,7 +450,7 @@ const AudienciasList = () => {
             <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">Nenhuma audiência cadastrada</h3>
             <p className="text-muted-foreground">
-              Cadastre a primeira audiência na aba "Nova Audiência"
+              Cadastre a primeira audiência na aba "Nova Audiência" ou importe uma planilha.
             </p>
           </CardContent>
         </Card>
@@ -277,17 +463,24 @@ const AudienciasList = () => {
                   <div className="space-y-2 flex-1">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <FileText className="h-5 w-5 text-primary" />
-                      {audiencia.numero_processo}
+                      {audiencia.numero_processo || "Sem processo"}
                     </CardTitle>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        {format(new Date(audiencia.data_audiencia), "dd/MM/yyyy", { locale: ptBR })}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        {audiencia.hora_audiencia}
-                      </span>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                      {audiencia.data_audiencia && (
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          {format(new Date(audiencia.data_audiencia + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
+                        </span>
+                      )}
+                      {audiencia.hora_audiencia && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          {audiencia.hora_audiencia}
+                        </span>
+                      )}
+                      {audiencia.tipo_audiencia && (
+                        <Badge variant="secondary">{audiencia.tipo_audiencia}</Badge>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -313,20 +506,114 @@ const AudienciasList = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-sm font-medium text-foreground mb-1">Autor</p>
-                    <p className="text-sm text-muted-foreground">{audiencia.autor}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground mb-1">Réu</p>
-                    <p className="text-sm text-muted-foreground">{audiencia.reu}</p>
-                  </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {audiencia.autor && (
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Autor</p>
+                      <p className="text-sm text-muted-foreground">{audiencia.autor}</p>
+                    </div>
+                  )}
+                  {audiencia.reu && (
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Réu</p>
+                      <p className="text-sm text-muted-foreground">{audiencia.reu}</p>
+                    </div>
+                  )}
+                  {audiencia.assunto && (
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Assunto</p>
+                      <p className="text-sm text-muted-foreground">{audiencia.assunto}</p>
+                    </div>
+                  )}
+                  {audiencia.npc_dossie && (
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">NPC/Dossiê</p>
+                      <p className="text-sm text-muted-foreground">{audiencia.npc_dossie}</p>
+                    </div>
+                  )}
+                  {audiencia.foro && (
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Foro</p>
+                      <p className="text-sm text-muted-foreground">{audiencia.foro}</p>
+                    </div>
+                  )}
+                  {audiencia.comarca && (
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Comarca</p>
+                      <p className="text-sm text-muted-foreground">{audiencia.comarca}</p>
+                    </div>
+                  )}
+                  {audiencia.carteira && (
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Carteira</p>
+                      <p className="text-sm text-muted-foreground">{audiencia.carteira}</p>
+                    </div>
+                  )}
+                  {audiencia.local && (
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Local</p>
+                      <p className="text-sm text-muted-foreground">{audiencia.local}</p>
+                    </div>
+                  )}
+                  {audiencia.advogado && (
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Advogado</p>
+                      <p className="text-sm text-muted-foreground">{audiencia.advogado}</p>
+                    </div>
+                  )}
+                  {audiencia.preposto && (
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Preposto</p>
+                      <p className="text-sm text-muted-foreground">{audiencia.preposto}</p>
+                    </div>
+                  )}
+                  {audiencia.adv_responsavel && (
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Adv. Responsável</p>
+                      <p className="text-sm text-muted-foreground">{audiencia.adv_responsavel}</p>
+                    </div>
+                  )}
+                  {audiencia.adv_do_autor && (
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Adv. do Autor</p>
+                      <p className="text-sm text-muted-foreground">{audiencia.adv_do_autor}</p>
+                    </div>
+                  )}
+                  {audiencia.estrategia && (
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Estratégia</p>
+                      <p className="text-sm text-muted-foreground">{audiencia.estrategia}</p>
+                    </div>
+                  )}
+                  {audiencia.estrategia_smaa && (
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Estratégia SMAA</p>
+                      <p className="text-sm text-muted-foreground">{audiencia.estrategia_smaa}</p>
+                    </div>
+                  )}
+                  {audiencia.contato_cartorio && (
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Contato Cartório</p>
+                      <p className="text-sm text-muted-foreground">{audiencia.contato_cartorio}</p>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground mb-1">Assunto</p>
-                  <p className="text-sm text-muted-foreground">{audiencia.assunto}</p>
-                </div>
+                {(audiencia.observacoes || audiencia.documentacao) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t">
+                    {audiencia.observacoes && (
+                      <div>
+                        <p className="text-sm font-medium text-foreground mb-1">Observações</p>
+                        <p className="text-sm text-muted-foreground">{audiencia.observacoes}</p>
+                      </div>
+                    )}
+                    {audiencia.documentacao && (
+                      <div>
+                        <p className="text-sm font-medium text-foreground mb-1">Documentação</p>
+                        <p className="text-sm text-muted-foreground">{audiencia.documentacao}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
                 {audiencia.atribuicoes && audiencia.atribuicoes.length > 0 && (
                   <div className="pt-2 border-t">
                     <p className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
@@ -379,6 +666,24 @@ const AudienciasList = () => {
           ))}
         </div>
       )}
+
+      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar importação</AlertDialogTitle>
+            <AlertDialogDescription>
+              Isso irá <strong>excluir todas as audiências e atribuições existentes</strong> e importar{" "}
+              <strong>{pendingRows.length}</strong> novas audiências da planilha. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmImport}>
+              Importar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
