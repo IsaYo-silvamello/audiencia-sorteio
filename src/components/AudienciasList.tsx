@@ -325,7 +325,7 @@ const AudienciasList = () => {
         const obj: any = {};
         headers.forEach((h) => {
           const key = HEADER_MAP[h.toUpperCase().trim()];
-          if (key && key !== "id") {
+          if (key) {
             obj[key] = row[h] !== undefined && row[h] !== "" ? String(row[h]) : null;
           }
         });
