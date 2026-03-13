@@ -742,9 +742,17 @@ const AudienciasList = () => {
                     </div>
                   )}
                 </div>
-                {(audiencia.observacoes || audiencia.documentacao) && (
+                {audiencia.observacoes && audiencia.observacoes.includes("PRESENCIAL") && (
+                  <div className="pt-2 border-t">
+                    <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                      <MapPin className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                      <p className="text-sm font-medium text-destructive">{audiencia.observacoes}</p>
+                    </div>
+                  </div>
+                )}
+                {((audiencia.observacoes && !audiencia.observacoes.includes("PRESENCIAL")) || audiencia.documentacao) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t">
-                    {audiencia.observacoes && (
+                    {audiencia.observacoes && !audiencia.observacoes.includes("PRESENCIAL") && (
                       <div>
                         <p className="text-sm font-medium text-foreground mb-1">Observações</p>
                         <p className="text-sm text-muted-foreground">{audiencia.observacoes}</p>
