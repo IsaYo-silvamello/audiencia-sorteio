@@ -745,6 +745,7 @@ const AudienciasList = () => {
                   <div className="space-y-2 flex-1">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <FileText className="h-5 w-5 text-primary" />
+                      {audiencia.id_planilha && <span className="text-muted-foreground font-normal text-sm">#{audiencia.id_planilha}</span>}
                       {audiencia.numero_processo || "Sem processo"}
                     </CardTitle>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
