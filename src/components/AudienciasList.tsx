@@ -573,18 +573,19 @@ const AudienciasList = () => {
 
   const handleExportarPlanilha = () => {
     const headers = [
-      "NPC/DOSSIÊ", "Autor", "Processo", "Data", "Horário", "Tipo da Audiência",
-      "Foro", "Comarca", "Assunto", "Carteira", "Status", "Local",
-      "Estratégia", "Estratégia SMAA",
-      "Cliente (Réu)", "Adv Responsável", "Observações", "Documentação", "Link",
-      "Adv do Autor", "Contato Cartório", "Advogado Atribuído", "Preposto Atribuído"
+      "ID", "NPC/DOSSIÊ", "AUTOR", "PROCESSO", "DATA", "HORÁRIO", "TIPO DA AUDIENCIA",
+      "FORO", "COMARCA", "ASSUNTO", "CARTEIRA", "STATUS", "LOCAL",
+      "ADVOGADO ATRIBUÍDO", "PREPOSTO ATRIBUÍDO", "ESTRATÉGIA", "ESTRATÉGIA SMAA",
+      "CLIENTE (RÉU)", "ADV RESPONSAVEL", "OBSERVAÇÕES DOCUMENTAÇÃO", "LINK",
+      "ADV DO AUTOR", "CONTATO CARTORIO", "OBSERVAÇÕES"
     ];
 
-    const rows = filteredAudiencias.map((aud) => {
+    const rows = filteredAudiencias.map((aud, idx) => {
       const advAtribuido = aud.atribuicoes?.find((a: any) => a.pessoa?.tipo === "advogado")?.pessoa?.nome || "";
       const prepAtribuido = aud.atribuicoes?.find((a: any) => a.pessoa?.tipo === "preposto")?.pessoa?.nome || "";
 
       return [
+        idx + 1,
         aud.npc_dossie || "",
         aud.autor || "",
         aud.numero_processo || "",
@@ -597,17 +598,17 @@ const AudienciasList = () => {
         aud.carteira || "",
         aud.status || "",
         aud.local || "",
+        advAtribuido,
+        prepAtribuido,
         aud.estrategia || "",
         aud.estrategia_smaa || "",
         aud.reu || "",
         aud.adv_responsavel || "",
-        aud.observacoes || "",
         aud.documentacao || "",
         aud.link || "",
         aud.adv_do_autor || "",
         aud.contato_cartorio || "",
-        advAtribuido,
-        prepAtribuido,
+        aud.observacoes || "",
       ];
     });
 
@@ -623,11 +624,10 @@ const AudienciasList = () => {
     });
 
     // Highlight yellow cells where there's correspondent info (presencial)
-    const obsColIdx = headers.indexOf("Observações");
+    const obsColIdx = headers.indexOf("OBSERVAÇÕES");
     filteredAudiencias.forEach((aud, rowIdx) => {
       const isCorrespondente = isPresencial(aud) || (aud.observacoes || "").includes("correspondente");
       if (isCorrespondente) {
-        // Highlight the entire row's "Observações" cell yellow
         const cellRef = XLSXStyle.utils.encode_cell({ r: rowIdx + 1, c: obsColIdx });
         if (ws[cellRef]) {
           ws[cellRef].s = {
