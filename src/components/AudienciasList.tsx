@@ -586,7 +586,7 @@ const AudienciasList = () => {
       const prepAtribuido = aud.atribuicoes?.find((a: any) => a.pessoa?.tipo === "preposto")?.pessoa?.nome || "";
 
       return [
-        idx + 1,
+        aud.id_planilha || "",
         aud.npc_dossie || "",
         aud.autor || "",
         aud.numero_processo || "",
