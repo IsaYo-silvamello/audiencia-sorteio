@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Users, Trash2 } from "lucide-react";
+import { UserPlus, Users, Trash2, Pencil } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -14,6 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 interface Pessoa {
   id: string;
@@ -24,7 +32,22 @@ interface Pessoa {
   tipo_advogado?: string | null;
   estado?: string | null;
   valor_audiencia?: number | null;
+  equipe?: string | null;
 }
+
+const EQUIPES = [
+  "MELI",
+  "Fraudes e Ilícitos",
+  "Cobrança DCR-PF Superendividados",
+  "Serviços Bancários",
+  "Vivo - Telefônica",
+  "CREDICARD",
+  "JV ITAU BMG",
+  "ContraCobrança DCR - PF",
+  "DCR PF Cobrança",
+  "BRADESCO",
+  "Planos Econômicos",
+];
 
 const PessoasList = () => {
   const [pessoas, setPessoas] = useState<Pessoa[]>([]);
@@ -36,7 +59,19 @@ const PessoasList = () => {
     tipo_advogado: "interno",
     estado: "",
     valor_audiencia: "",
+    equipe: "",
   });
+  const [editPessoa, setEditPessoa] = useState<Pessoa | null>(null);
+  const [editData, setEditData] = useState({
+    nome: "",
+    tipo: "advogado",
+    documento: "",
+    tipo_advogado: "interno",
+    estado: "",
+    valor_audiencia: "",
+    equipe: "",
+  });
+  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
   const fetchPessoas = async () => {
@@ -74,6 +109,7 @@ const PessoasList = () => {
         tipo: formData.tipo,
         documento: formData.documento || null,
         ativo: true,
+        equipe: formData.equipe || null,
       };
 
       if (formData.tipo === "advogado") {
@@ -100,6 +136,7 @@ const PessoasList = () => {
         tipo_advogado: "interno",
         estado: "",
         valor_audiencia: "",
+        equipe: "",
       });
       fetchPessoas();
     } catch (error: any) {
@@ -136,210 +173,339 @@ const PessoasList = () => {
     }
   };
 
+  const openEdit = (pessoa: Pessoa) => {
+    setEditPessoa(pessoa);
+    setEditData({
+      nome: pessoa.nome,
+      tipo: pessoa.tipo,
+      documento: pessoa.documento || "",
+      tipo_advogado: pessoa.tipo_advogado || "interno",
+      estado: pessoa.estado || "",
+      valor_audiencia: pessoa.valor_audiencia?.toString() || "",
+      equipe: pessoa.equipe || "",
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editPessoa) return;
+    setSaving(true);
+    try {
+      const updateData: any = {
+        nome: editData.nome,
+        tipo: editData.tipo,
+        documento: editData.documento || null,
+        equipe: editData.equipe || null,
+      };
+
+      if (editData.tipo === "advogado") {
+        updateData.tipo_advogado = editData.tipo_advogado;
+        if (editData.tipo_advogado === "externo") {
+          updateData.estado = editData.estado || null;
+          updateData.valor_audiencia = editData.valor_audiencia ? parseFloat(editData.valor_audiencia) : null;
+        } else {
+          updateData.estado = null;
+          updateData.valor_audiencia = null;
+        }
+      } else {
+        updateData.tipo_advogado = null;
+        updateData.estado = null;
+        updateData.valor_audiencia = null;
+      }
+
+      const { error } = await supabase
+        .from("pessoas")
+        .update(updateData)
+        .eq("id", editPessoa.id);
+
+      if (error) throw error;
+
+      toast({ title: "Pessoa atualizada com sucesso" });
+      setEditPessoa(null);
+      fetchPessoas();
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erro ao atualizar", description: error.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const advogados = pessoas.filter((p) => p.tipo === "advogado");
   const prepostos = pessoas.filter((p) => p.tipo === "preposto");
 
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <Card className="lg:col-span-1">
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <UserPlus className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle>Cadastrar Pessoa</CardTitle>
-              <CardDescription>Advogados e Prepostos</CardDescription>
-            </div>
+  const renderEquipeSelect = (value: string, onChange: (v: string) => void) => (
+    <div className="space-y-2">
+      <Label>Equipe / Carteira</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger>
+          <SelectValue placeholder="Selecione a equipe" />
+        </SelectTrigger>
+        <SelectContent>
+          {EQUIPES.map((eq) => (
+            <SelectItem key={eq} value={eq}>{eq}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
+  const renderPessoaRow = (pessoa: Pessoa, tipoLabel: string, badgeVariant: "outline" | "secondary" | "default") => (
+    <div
+      key={pessoa.id}
+      className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+    >
+      <div className="flex items-center gap-3">
+        <Badge variant={badgeVariant}>{tipoLabel}</Badge>
+        <div>
+          <span className="font-medium block">{pessoa.nome}</span>
+          <div className="flex flex-col text-sm text-muted-foreground">
+            {pessoa.documento && <span>OAB/CPF: {pessoa.documento}</span>}
+            {pessoa.tipo_advogado && (
+              <span className="capitalize">{pessoa.tipo_advogado}</span>
+            )}
+            {pessoa.tipo_advogado === "externo" && pessoa.estado && (
+              <span>Estado: {pessoa.estado}</span>
+            )}
+            {pessoa.tipo_advogado === "externo" && pessoa.valor_audiencia && (
+              <span>Valor: R$ {pessoa.valor_audiencia.toFixed(2)}</span>
+            )}
+            {pessoa.equipe && (
+              <span className="text-primary font-medium">Equipe: {pessoa.equipe}</span>
+            )}
           </div>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        </div>
+      </div>
+      <div className="flex items-center gap-1">
+        <Button variant="ghost" size="icon" onClick={() => openEdit(pessoa)}>
+          <Pencil className="h-4 w-4 text-muted-foreground" />
+        </Button>
+        <Button variant="ghost" size="icon" onClick={() => handleDelete(pessoa.id)}>
+          <Trash2 className="h-4 w-4 text-destructive" />
+        </Button>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <UserPlus className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Cadastrar Pessoa</CardTitle>
+                <CardDescription>Advogados e Prepostos</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="nome">Nome Completo</Label>
+                <Input
+                  id="nome"
+                  placeholder="Digite o nome"
+                  value={formData.nome}
+                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="documento">OAB/CPF</Label>
+                <Input
+                  id="documento"
+                  placeholder="Digite OAB ou CPF"
+                  value={formData.documento}
+                  onChange={(e) => setFormData({ ...formData, documento: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tipo">Tipo</Label>
+                <Select
+                  value={formData.tipo}
+                  onValueChange={(value) => setFormData({ ...formData, tipo: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="advogado">Advogado</SelectItem>
+                    <SelectItem value="preposto">Preposto</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {formData.tipo === "advogado" && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="tipo_advogado">Tipo de Advogado</Label>
+                    <Select
+                      value={formData.tipo_advogado}
+                      onValueChange={(value) => setFormData({ ...formData, tipo_advogado: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="interno">Interno</SelectItem>
+                        <SelectItem value="externo">Externo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {formData.tipo_advogado === "externo" && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="estado">Estado</Label>
+                        <Input
+                          id="estado"
+                          placeholder="Ex: SP, RJ, MG"
+                          value={formData.estado}
+                          onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="valor_audiencia">Valor da Audiência</Label>
+                        <Input
+                          id="valor_audiencia"
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={formData.valor_audiencia}
+                          onChange={(e) => setFormData({ ...formData, valor_audiencia: e.target.value })}
+                        />
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+
+              {renderEquipeSelect(formData.equipe, (v) => setFormData({ ...formData, equipe: v }))}
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Cadastrando..." : "Cadastrar"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                Advogados ({advogados.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {advogados.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">
+                  Nenhum advogado cadastrado
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {advogados.map((pessoa) => renderPessoaRow(pessoa, "Advogado", "outline"))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                Prepostos ({prepostos.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {prepostos.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">
+                  Nenhum preposto cadastrado
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {prepostos.map((pessoa) => renderPessoaRow(pessoa, "Preposto", "secondary"))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Dialog de edição */}
+      <Dialog open={!!editPessoa} onOpenChange={(open) => !open && setEditPessoa(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Pessoa</DialogTitle>
+            <DialogDescription>Altere os dados e salve.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="nome">Nome Completo</Label>
+              <Label>Nome Completo</Label>
               <Input
-                id="nome"
-                placeholder="Digite o nome"
-                value={formData.nome}
-                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                required
+                value={editData.nome}
+                onChange={(e) => setEditData({ ...editData, nome: e.target.value })}
               />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="documento">OAB/CPF</Label>
+              <Label>OAB/CPF</Label>
               <Input
-                id="documento"
-                placeholder="Digite OAB ou CPF"
-                value={formData.documento}
-                onChange={(e) => setFormData({ ...formData, documento: e.target.value })}
+                value={editData.documento}
+                onChange={(e) => setEditData({ ...editData, documento: e.target.value })}
               />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="tipo">Tipo</Label>
-              <Select
-                value={formData.tipo}
-                onValueChange={(value) => setFormData({ ...formData, tipo: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+              <Label>Tipo</Label>
+              <Select value={editData.tipo} onValueChange={(v) => setEditData({ ...editData, tipo: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="advogado">Advogado</SelectItem>
                   <SelectItem value="preposto">Preposto</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
-            {formData.tipo === "advogado" && (
+            {editData.tipo === "advogado" && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="tipo_advogado">Tipo de Advogado</Label>
-                  <Select
-                    value={formData.tipo_advogado}
-                    onValueChange={(value) => setFormData({ ...formData, tipo_advogado: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                  <Label>Tipo de Advogado</Label>
+                  <Select value={editData.tipo_advogado} onValueChange={(v) => setEditData({ ...editData, tipo_advogado: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="interno">Interno</SelectItem>
                       <SelectItem value="externo">Externo</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-
-                {formData.tipo_advogado === "externo" && (
+                {editData.tipo_advogado === "externo" && (
                   <>
                     <div className="space-y-2">
-                      <Label htmlFor="estado">Estado</Label>
-                      <Input
-                        id="estado"
-                        placeholder="Ex: SP, RJ, MG"
-                        value={formData.estado}
-                        onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
-                      />
+                      <Label>Estado</Label>
+                      <Input value={editData.estado} onChange={(e) => setEditData({ ...editData, estado: e.target.value })} />
                     </div>
-
                     <div className="space-y-2">
-                      <Label htmlFor="valor_audiencia">Valor da Audiência</Label>
-                      <Input
-                        id="valor_audiencia"
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={formData.valor_audiencia}
-                        onChange={(e) => setFormData({ ...formData, valor_audiencia: e.target.value })}
-                      />
+                      <Label>Valor da Audiência</Label>
+                      <Input type="number" step="0.01" value={editData.valor_audiencia} onChange={(e) => setEditData({ ...editData, valor_audiencia: e.target.value })} />
                     </div>
                   </>
                 )}
               </>
             )}
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Cadastrando..." : "Cadastrar"}
+            {renderEquipeSelect(editData.equipe, (v) => setEditData({ ...editData, equipe: v }))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditPessoa(null)}>Cancelar</Button>
+            <Button onClick={handleSaveEdit} disabled={saving}>
+              {saving ? "Salvando..." : "Salvar"}
             </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <div className="lg:col-span-2 space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
-              Advogados ({advogados.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {advogados.length === 0 ? (
-              <p className="text-center text-muted-foreground py-4">
-                Nenhum advogado cadastrado
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {advogados.map((pessoa) => (
-                  <div
-                    key={pessoa.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Badge variant="outline">Advogado</Badge>
-                      <div>
-                        <span className="font-medium block">{pessoa.nome}</span>
-                        <div className="flex flex-col text-sm text-muted-foreground">
-                          {pessoa.documento && <span>OAB/CPF: {pessoa.documento}</span>}
-                          {pessoa.tipo_advogado && (
-                            <span className="capitalize">{pessoa.tipo_advogado}</span>
-                          )}
-                          {pessoa.tipo_advogado === "externo" && pessoa.estado && (
-                            <span>Estado: {pessoa.estado}</span>
-                          )}
-                          {pessoa.tipo_advogado === "externo" && pessoa.valor_audiencia && (
-                            <span>Valor: R$ {pessoa.valor_audiencia.toFixed(2)}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(pessoa.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
-              Prepostos ({prepostos.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {prepostos.length === 0 ? (
-              <p className="text-center text-muted-foreground py-4">
-                Nenhum preposto cadastrado
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {prepostos.map((pessoa) => (
-                  <div
-                    key={pessoa.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Badge variant="secondary">Preposto</Badge>
-                      <div>
-                        <span className="font-medium block">{pessoa.nome}</span>
-                        {pessoa.documento && (
-                          <span className="text-sm text-muted-foreground">CPF: {pessoa.documento}</span>
-                        )}
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(pessoa.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

@@ -44,37 +44,52 @@ const NovaAudienciaForm = () => {
         return acc;
       }, {}) || {};
 
-      const pessoasDisponiveis = pessoasAtivas.filter(
-        (pessoa) => (contagemAtribuicoes[pessoa.id] || 0) < 2
-      );
-
-      if (pessoasDisponiveis.length === 0) return;
-
       const atribuicoesParaInserir = [];
 
       for (const audiencia of audienciasPendentes) {
-        if (pessoasDisponiveis.length === 0) break;
+        const carteiraAudiencia = (audiencia.carteira || "").trim().toUpperCase();
 
-        const indiceAleatorio = Math.floor(Math.random() * pessoasDisponiveis.length);
-        const pessoaSorteada = pessoasDisponiveis[indiceAleatorio];
+        // Filtrar advogados por equipe compatível + limite de 2
+        const advogados = pessoasAtivas.filter((p) => p.tipo === "advogado");
+        const advDisponiveis = advogados.filter((p) => {
+          const equipe = ((p as any).equipe || "").trim().toUpperCase();
+          if (!carteiraAudiencia || !equipe) return true;
+          return equipe === carteiraAudiencia;
+        }).filter((p) => (contagemAtribuicoes[p.id] || 0) < 2);
 
-        atribuicoesParaInserir.push({
-          audiencia_id: audiencia.id,
-          pessoa_id: pessoaSorteada.id,
-          semana_inicio: inicioDaSemana.toISOString().split("T")[0],
-        });
+        // Filtrar prepostos por equipe compatível + limite de 2
+        const prepostos = pessoasAtivas.filter((p) => p.tipo === "preposto");
+        const prepDisponiveis = prepostos.filter((p) => {
+          const equipe = ((p as any).equipe || "").trim().toUpperCase();
+          if (!carteiraAudiencia || !equipe) return true;
+          return equipe === carteiraAudiencia;
+        }).filter((p) => (contagemAtribuicoes[p.id] || 0) < 2);
 
-        contagemAtribuicoes[pessoaSorteada.id] = (contagemAtribuicoes[pessoaSorteada.id] || 0) + 1;
+        if (advDisponiveis.length > 0) {
+          const advSorteado = advDisponiveis[Math.floor(Math.random() * advDisponiveis.length)];
+          atribuicoesParaInserir.push({
+            audiencia_id: audiencia.id,
+            pessoa_id: advSorteado.id,
+            semana_inicio: inicioDaSemana.toISOString().split("T")[0],
+          });
+          contagemAtribuicoes[advSorteado.id] = (contagemAtribuicoes[advSorteado.id] || 0) + 1;
+        }
 
-        if (contagemAtribuicoes[pessoaSorteada.id] >= 2) {
-          pessoasDisponiveis.splice(indiceAleatorio, 1);
+        if (prepDisponiveis.length > 0) {
+          const prepSorteado = prepDisponiveis[Math.floor(Math.random() * prepDisponiveis.length)];
+          atribuicoesParaInserir.push({
+            audiencia_id: audiencia.id,
+            pessoa_id: prepSorteado.id,
+            semana_inicio: inicioDaSemana.toISOString().split("T")[0],
+          });
+          contagemAtribuicoes[prepSorteado.id] = (contagemAtribuicoes[prepSorteado.id] || 0) + 1;
         }
       }
 
       if (atribuicoesParaInserir.length > 0) {
         await supabase.from("atribuicoes").insert(atribuicoesParaInserir);
 
-        const idsAudienciasAtribuidas = atribuicoesParaInserir.map((a) => a.audiencia_id);
+        const idsAudienciasAtribuidas = [...new Set(atribuicoesParaInserir.map((a) => a.audiencia_id))];
         await supabase
           .from("audiencias")
           .update({ status: "atribuida" })
@@ -110,7 +125,6 @@ const NovaAudienciaForm = () => {
 
       if (error) throw error;
 
-      // Realizar sorteio automático
       await realizarSorteioAutomatico();
 
       toast({
