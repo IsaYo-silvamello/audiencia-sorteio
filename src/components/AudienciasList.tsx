@@ -2,10 +2,12 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, FileText, Users, Search, Trash2, ExternalLink, Upload, MapPin } from "lucide-react";
+import { Calendar, Clock, FileText, Users, Search, Trash2, ExternalLink, Upload, MapPin, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -23,6 +25,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx";
@@ -127,12 +137,11 @@ function extrairUF(numero_processo: string | null): string | null {
 function getEquipeCorrespondente(uf: string | null): string {
   if (uf === "RJ") return "Equipe MANA";
   if (uf === "MG") return "Equipe Mariana Goes";
-  return "Equipe Thiago"; // SP, Região Sul, demais estados
+  return "Equipe Thiago";
 }
 
 function parseExcelDate(value: any): string | null {
   if (!value) return null;
-  // Excel serial number (numeric)
   if (typeof value === "number") {
     const date = XLSX.SSF.parse_date_code(value);
     if (date) {
@@ -142,7 +151,6 @@ function parseExcelDate(value: any): string | null {
     }
   }
   const s = String(value).trim();
-  // Excel serial number as string (e.g. "46097")
   if (/^\d+$/.test(s) && Number(s) > 1000) {
     const date = XLSX.SSF.parse_date_code(Number(s));
     if (date) {
@@ -151,10 +159,8 @@ function parseExcelDate(value: any): string | null {
       return `${date.y}-${m}-${d}`;
     }
   }
-  // dd/mm/yyyy
   const match = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
   if (match) return `${match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}`;
-  // yyyy-mm-dd
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
   return s || null;
 }
@@ -168,7 +174,6 @@ function parseExcelTime(value: any): string | null {
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
   }
   const s = String(value).trim();
-  // Decimal string representing time fraction (e.g. "0.75" = 18:00)
   if (/^\d*\.\d+$/.test(s)) {
     const totalSeconds = Math.round(Number(s) * 86400);
     const h = Math.floor(totalSeconds / 3600);
@@ -189,6 +194,9 @@ const AudienciasList = () => {
   const [importing, setImporting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingRows, setPendingRows] = useState<any[]>([]);
+  const [editAudiencia, setEditAudiencia] = useState<Audiencia | null>(null);
+  const [editAudData, setEditAudData] = useState<Record<string, string>>({});
+  const [savingEdit, setSavingEdit] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -310,7 +318,6 @@ const AudienciasList = () => {
         return;
       }
 
-      // Map headers
       const headers = Object.keys(jsonData[0] as any);
       const mapped = jsonData.map((row: any) => {
         const obj: any = {};
@@ -320,10 +327,8 @@ const AudienciasList = () => {
             obj[key] = row[h] !== undefined && row[h] !== "" ? String(row[h]) : null;
           }
         });
-        // Parse date and time
         if (obj.data_audiencia) obj.data_audiencia = parseExcelDate(obj.data_audiencia);
         if (obj.hora_audiencia) obj.hora_audiencia = parseExcelTime(obj.hora_audiencia);
-        // Defaults
         const ALLOWED_STATUSES = ['pendente', 'atribuida', 'realizada'];
         const rawStatus = (obj.status || '').toString().toLowerCase().trim();
         obj.status = ALLOWED_STATUSES.includes(rawStatus) ? rawStatus : 'pendente';
@@ -345,11 +350,9 @@ const AudienciasList = () => {
     setShowConfirm(false);
     setImporting(true);
     try {
-      // Delete all atribuicoes first, then audiencias
       await supabase.from("atribuicoes").delete().neq("id", "00000000-0000-0000-0000-000000000000");
       await supabase.from("audiencias").delete().neq("id", "00000000-0000-0000-0000-000000000000");
 
-      // Insert in batches of 100
       const batchSize = 100;
       let inserted = 0;
       for (let i = 0; i < pendingRows.length; i += batchSize) {
@@ -360,14 +363,12 @@ const AudienciasList = () => {
       }
 
       // === SORTEIO AUTOMÁTICO PÓS-IMPORTAÇÃO ===
-      // Buscar audiências recém-inseridas (todas pendentes)
       const { data: audienciasImportadas, error: fetchErr } = await supabase
         .from("audiencias")
         .select("*")
         .eq("status", "pendente");
       if (fetchErr) throw fetchErr;
 
-      // Buscar pessoas ativas
       const { data: pessoas, error: pessoasErr } = await supabase
         .from("pessoas")
         .select("*")
@@ -377,7 +378,6 @@ const AudienciasList = () => {
       const advogados = pessoas?.filter((p) => p.tipo === "advogado") || [];
       const prepostos = pessoas?.filter((p) => p.tipo === "preposto") || [];
 
-      // Calcular início da semana
       const hoje = new Date();
       const diaSemana = hoje.getDay();
       const inicioSemana = new Date(hoje);
@@ -385,7 +385,6 @@ const AudienciasList = () => {
       inicioSemana.setHours(0, 0, 0, 0);
       const semanaInicioStr = inicioSemana.toISOString().split("T")[0];
 
-      // Contagem de atribuições na semana
       const contagemPorPessoa = new Map<string, number>();
 
       const atribuicoes: Array<{ audiencia_id: string; pessoa_id: string; semana_inicio: string }> = [];
@@ -395,7 +394,6 @@ const AudienciasList = () => {
 
       for (const audiencia of (audienciasImportadas || [])) {
         if (isPresencial(audiencia)) {
-          // Audiência presencial: não sorteia, marca equipe correspondente
           presenciaisCount++;
           const uf = extrairUF(audiencia.numero_processo);
           const equipe = getEquipeCorrespondente(uf);
@@ -403,13 +401,20 @@ const AudienciasList = () => {
           const obs = `⚠️ PRESENCIAL${ufLabel} - Contatar ${equipe} para contratação de correspondente`;
           audienciasPresenciais.push({ id: audiencia.id, observacoes: obs });
         } else {
-          // Audiência virtual: sortear advogado + preposto
-          const advDisponiveis = advogados.filter(
-            (p) => (contagemPorPessoa.get(p.id) || 0) < 2
-          );
-          const prepDisponiveis = prepostos.filter(
-            (p) => (contagemPorPessoa.get(p.id) || 0) < 2
-          );
+          // Regra de equipe: filtrar por carteira
+          const carteiraAudiencia = (audiencia.carteira || "").trim().toUpperCase();
+          
+          const advDisponiveis = advogados.filter((p) => {
+            const equipe = ((p as any).equipe || "").trim().toUpperCase();
+            if (!carteiraAudiencia || !equipe) return true;
+            return equipe === carteiraAudiencia;
+          }).filter((p) => (contagemPorPessoa.get(p.id) || 0) < 2);
+
+          const prepDisponiveis = prepostos.filter((p) => {
+            const equipe = ((p as any).equipe || "").trim().toUpperCase();
+            if (!carteiraAudiencia || !equipe) return true;
+            return equipe === carteiraAudiencia;
+          }).filter((p) => (contagemPorPessoa.get(p.id) || 0) < 2);
 
           if (advDisponiveis.length > 0 && prepDisponiveis.length > 0) {
             const advSorteado = advDisponiveis[Math.floor(Math.random() * advDisponiveis.length)];
@@ -427,13 +432,11 @@ const AudienciasList = () => {
         }
       }
 
-      // Inserir atribuições
       if (atribuicoes.length > 0) {
         const { error: insertErr } = await supabase.from("atribuicoes").insert(atribuicoes);
         if (insertErr) throw insertErr;
       }
 
-      // Atualizar status das audiências atribuídas
       if (audienciasAtribuidas.length > 0) {
         const { error: updateErr } = await supabase
           .from("audiencias")
@@ -442,7 +445,6 @@ const AudienciasList = () => {
         if (updateErr) throw updateErr;
       }
 
-      // Atualizar observações das audiências presenciais
       for (const ap of audienciasPresenciais) {
         await supabase
           .from("audiencias")
@@ -515,6 +517,63 @@ const AudienciasList = () => {
       handleDelete(id);
     } else {
       handleStatusChange(id, value);
+    }
+  };
+
+  const openEditAudiencia = (aud: Audiencia) => {
+    setEditAudiencia(aud);
+    setEditAudData({
+      numero_processo: aud.numero_processo || "",
+      data_audiencia: aud.data_audiencia || "",
+      hora_audiencia: aud.hora_audiencia || "",
+      autor: aud.autor || "",
+      reu: aud.reu || "",
+      assunto: aud.assunto || "",
+      link: aud.link || "",
+      tipo_audiencia: aud.tipo_audiencia || "",
+      local: aud.local || "",
+      observacoes: aud.observacoes || "",
+      carteira: aud.carteira || "",
+      foro: aud.foro || "",
+      comarca: aud.comarca || "",
+      npc_dossie: aud.npc_dossie || "",
+      advogado: aud.advogado || "",
+      preposto: aud.preposto || "",
+      estrategia: aud.estrategia || "",
+      estrategia_smaa: aud.estrategia_smaa || "",
+      adv_responsavel: aud.adv_responsavel || "",
+      adv_do_autor: aud.adv_do_autor || "",
+      contato_cartorio: aud.contato_cartorio || "",
+      documentacao: aud.documentacao || "",
+    });
+  };
+
+  const handleSaveEditAudiencia = async () => {
+    if (!editAudiencia) return;
+    setSavingEdit(true);
+    try {
+      const updateData: any = {};
+      Object.entries(editAudData).forEach(([key, value]) => {
+        updateData[key] = value || null;
+      });
+      // Keep required fields non-null
+      updateData.autor = editAudData.autor || "";
+      updateData.reu = editAudData.reu || "";
+
+      const { error } = await supabase
+        .from("audiencias")
+        .update(updateData)
+        .eq("id", editAudiencia.id);
+
+      if (error) throw error;
+
+      toast({ title: "Audiência atualizada com sucesso" });
+      setEditAudiencia(null);
+      fetchAudiencias();
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erro ao atualizar audiência", description: error.message });
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -629,6 +688,9 @@ const AudienciasList = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     {getStatusBadge(audiencia.status)}
+                    <Button variant="ghost" size="icon" onClick={() => openEditAudiencia(audiencia)}>
+                      <Pencil className="h-4 w-4 text-muted-foreground" />
+                    </Button>
                     <Select
                       onValueChange={(value) => handleTratarChange(audiencia.id, value)}
                     >
@@ -836,6 +898,112 @@ const AudienciasList = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog de edição de audiência */}
+      <Dialog open={!!editAudiencia} onOpenChange={(open) => !open && setEditAudiencia(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Audiência</DialogTitle>
+            <DialogDescription>Altere os dados da audiência e salve.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Nº Processo</Label>
+              <Input value={editAudData.numero_processo || ""} onChange={(e) => setEditAudData({ ...editAudData, numero_processo: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Data</Label>
+              <Input type="date" value={editAudData.data_audiencia || ""} onChange={(e) => setEditAudData({ ...editAudData, data_audiencia: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Hora</Label>
+              <Input type="time" value={editAudData.hora_audiencia || ""} onChange={(e) => setEditAudData({ ...editAudData, hora_audiencia: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Tipo de Audiência</Label>
+              <Input value={editAudData.tipo_audiencia || ""} onChange={(e) => setEditAudData({ ...editAudData, tipo_audiencia: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Autor</Label>
+              <Input value={editAudData.autor || ""} onChange={(e) => setEditAudData({ ...editAudData, autor: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Réu</Label>
+              <Input value={editAudData.reu || ""} onChange={(e) => setEditAudData({ ...editAudData, reu: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Carteira</Label>
+              <Input value={editAudData.carteira || ""} onChange={(e) => setEditAudData({ ...editAudData, carteira: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Foro</Label>
+              <Input value={editAudData.foro || ""} onChange={(e) => setEditAudData({ ...editAudData, foro: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Comarca</Label>
+              <Input value={editAudData.comarca || ""} onChange={(e) => setEditAudData({ ...editAudData, comarca: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Local</Label>
+              <Input value={editAudData.local || ""} onChange={(e) => setEditAudData({ ...editAudData, local: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>NPC/Dossiê</Label>
+              <Input value={editAudData.npc_dossie || ""} onChange={(e) => setEditAudData({ ...editAudData, npc_dossie: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Advogado</Label>
+              <Input value={editAudData.advogado || ""} onChange={(e) => setEditAudData({ ...editAudData, advogado: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Preposto</Label>
+              <Input value={editAudData.preposto || ""} onChange={(e) => setEditAudData({ ...editAudData, preposto: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Adv. Responsável</Label>
+              <Input value={editAudData.adv_responsavel || ""} onChange={(e) => setEditAudData({ ...editAudData, adv_responsavel: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Adv. do Autor</Label>
+              <Input value={editAudData.adv_do_autor || ""} onChange={(e) => setEditAudData({ ...editAudData, adv_do_autor: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Contato Cartório</Label>
+              <Input value={editAudData.contato_cartorio || ""} onChange={(e) => setEditAudData({ ...editAudData, contato_cartorio: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Link</Label>
+              <Input value={editAudData.link || ""} onChange={(e) => setEditAudData({ ...editAudData, link: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Assunto</Label>
+              <Input value={editAudData.assunto || ""} onChange={(e) => setEditAudData({ ...editAudData, assunto: e.target.value })} />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Estratégia</Label>
+              <Textarea value={editAudData.estrategia || ""} onChange={(e) => setEditAudData({ ...editAudData, estrategia: e.target.value })} rows={2} />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Estratégia SMAA</Label>
+              <Textarea value={editAudData.estrategia_smaa || ""} onChange={(e) => setEditAudData({ ...editAudData, estrategia_smaa: e.target.value })} rows={2} />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Observações</Label>
+              <Textarea value={editAudData.observacoes || ""} onChange={(e) => setEditAudData({ ...editAudData, observacoes: e.target.value })} rows={2} />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Documentação</Label>
+              <Textarea value={editAudData.documentacao || ""} onChange={(e) => setEditAudData({ ...editAudData, documentacao: e.target.value })} rows={2} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditAudiencia(null)}>Cancelar</Button>
+            <Button onClick={handleSaveEditAudiencia} disabled={savingEdit}>
+              {savingEdit ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
