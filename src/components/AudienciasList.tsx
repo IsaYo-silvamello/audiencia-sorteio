@@ -673,6 +673,14 @@ const AudienciasList = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-foreground">Audiências Cadastradas</h2>
         <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={handleExportarPlanilha}
+            disabled={filteredAudiencias.length === 0}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Extrair Planilha
+          </Button>
           <input
             ref={fileInputRef}
             type="file"
