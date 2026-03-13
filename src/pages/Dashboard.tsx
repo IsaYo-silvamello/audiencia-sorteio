@@ -1,4 +1,5 @@
-import { Scale, Calendar, Settings } from "lucide-react";
+import { Calendar, Settings } from "lucide-react";
+import logoSmaart from "@/assets/logosmaart.png";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AudienciasList from "@/components/AudienciasList";
 import AdminPanel from "@/components/AdminPanel";
