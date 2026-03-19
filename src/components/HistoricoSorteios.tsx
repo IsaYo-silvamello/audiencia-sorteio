@@ -26,7 +26,7 @@ const HistoricoSorteios = () => {
         .select("*")
         .order("executado_em", { ascending: false })
         .limit(50);
-      if (data) setHistorico(data as Historico[]);
+      if (data) setHistorico(data as unknown as Historico[]);
       setLoading(false);
     };
     fetch();
