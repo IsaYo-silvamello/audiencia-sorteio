@@ -22,7 +22,7 @@ const HistoricoSorteios = () => {
   useEffect(() => {
     const fetch = async () => {
       const { data } = await supabase
-        .from("historico_sorteios")
+        .from("historico_sorteios" as any)
         .select("*")
         .order("executado_em", { ascending: false })
         .limit(50);

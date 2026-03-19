@@ -227,7 +227,7 @@ export function useSorteio() {
       setStatus("concluido");
 
       // Salvar histórico
-      await supabase.from("historico_sorteios").insert({
+      await (supabase.from("historico_sorteios" as any) as any).insert({
         total: res.total,
         atribuidas: res.atribuidas,
         presenciais: res.presenciais,
@@ -238,7 +238,7 @@ export function useSorteio() {
           preposto: i.preposto?.nome,
           motivo: i.motivo,
         }))),
-      }).then(() => {});
+      });
 
       toast({ title: "Sorteio realizado!", description: `${atribuidas} audiências atribuídas` });
     } catch (err: any) {
