@@ -1,29 +1,38 @@
+// src/components/DashboardHome.tsx  ← substitui o arquivo atual
+
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
-import { Calendar, Clock, Scale, Users } from "lucide-react";
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay } from "date-fns";
-import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-type Audiencia = {
-  carteira: string | null;
-  data_audiencia: string | null;
-  status: string;
-};
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Calendar, Clock, Scale, Users, AlertTriangle, TrendingUp } from "lucide-react";
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, format, subWeeks } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 type FilterPeriod = "dia" | "semana" | "mes";
 
-const DashboardHome = () => {
+interface Pessoa {
+  id: string;
+  nome: string;
+  tipo: string;
+  total: number;
+  semana: number;
+}
+
+export default function DashboardHome() {
   const [stats, setStats] = useState({
     audienciasEstaSemana: 0,
     pendentesSorteio: 0,
     advogadosCadastrados: 0,
     prepostosCadastrados: 0,
-    audienciasDesignadas: 0,
     totalAudiencias: 0,
+    realizadas: 0,
   });
-  const [audiencias, setAudiencias] = useState<Audiencia[]>([]);
+  const [audiencias, setAudiencias] = useState<any[]>([]);
+  const [pessoas, setPessoas] = useState<Pessoa[]>([]);
+  const [alertas, setAlertas] = useState<string[]>([]);
   const [filtro, setFiltro] = useState<FilterPeriod>("semana");
 
   const { inicio, fim } = useMemo(() => {
@@ -39,177 +48,198 @@ const DashboardHome = () => {
   }, [filtro]);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchAll = async () => {
       const hoje = new Date();
-      const inicioSemana = startOfWeek(hoje, { weekStartsOn: 0 });
-      const fimSemana = endOfWeek(hoje, { weekStartsOn: 0 });
+      const iS = startOfWeek(hoje, { weekStartsOn: 0 });
+      const fS = endOfWeek(hoje, { weekStartsOn: 0 });
 
-      const { count: audienciasCount } = await supabase
-        .from("audiencias")
-        .select("*", { count: "exact", head: true })
-        .gte("data_audiencia", inicioSemana.toISOString())
-        .lte("data_audiencia", fimSemana.toISOString());
-
-      const { count: pendentesCount } = await supabase
-        .from("audiencias")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pendente");
-
-      const { count: advogadosCount } = await supabase
-        .from("pessoas")
-        .select("*", { count: "exact", head: true })
-        .eq("tipo", "advogado")
-        .eq("ativo", true);
-
-      const { count: prepostosCount } = await supabase
-        .from("pessoas")
-        .select("*", { count: "exact", head: true })
-        .eq("tipo", "preposto")
-        .eq("ativo", true);
-
-      const { count: designadasCount } = await supabase
-        .from("audiencias")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "atribuida");
-
-      const { count: totalCount } = await supabase
-        .from("audiencias")
-        .select("*", { count: "exact", head: true });
+      const [
+        { count: semana },
+        { count: pendentes },
+        { count: adv },
+        { count: prep },
+        { count: total },
+        { count: realizadas },
+      ] = await Promise.all([
+        supabase
+          .from("audiencias")
+          .select("*", { count: "exact", head: true })
+          .gte("data_audiencia", iS.toISOString().split("T")[0])
+          .lte("data_audiencia", fS.toISOString().split("T")[0]),
+        supabase.from("audiencias").select("*", { count: "exact", head: true }).eq("status", "pendente"),
+        supabase.from("pessoas").select("*", { count: "exact", head: true }).eq("tipo", "advogado").eq("ativo", true),
+        supabase.from("pessoas").select("*", { count: "exact", head: true }).eq("tipo", "preposto").eq("ativo", true),
+        supabase.from("audiencias").select("*", { count: "exact", head: true }),
+        supabase.from("audiencias").select("*", { count: "exact", head: true }).eq("status", "realizada"),
+      ]);
 
       setStats({
-        audienciasEstaSemana: audienciasCount || 0,
-        pendentesSorteio: pendentesCount || 0,
-        advogadosCadastrados: advogadosCount || 0,
-        prepostosCadastrados: prepostosCount || 0,
-        audienciasDesignadas: designadasCount || 0,
-        totalAudiencias: totalCount || 0,
+        audienciasEstaSemana: semana || 0,
+        pendentesSorteio: pendentes || 0,
+        advogadosCadastrados: adv || 0,
+        prepostosCadastrados: prep || 0,
+        totalAudiencias: total || 0,
+        realizadas: realizadas || 0,
       });
+
+      // Alertas inteligentes
+      const novosAlertas: string[] = [];
+      if ((pendentes || 0) > 5) novosAlertas.push(`${pendentes} audiências pendentes de sorteio`);
+
+      const amanha = new Date(hoje);
+      amanha.setDate(hoje.getDate() + 1);
+      const { count: proximasSemSortear } = await supabase
+        .from("audiencias")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pendente")
+        .lte("data_audiencia", amanha.toISOString().split("T")[0]);
+      if ((proximasSemSortear || 0) > 0) {
+        novosAlertas.push(`${proximasSemSortear} audiência(s) pendentes com data amanhã ou antes`);
+      }
+
+      setAlertas(novosAlertas);
+
+      // Ranking de pessoas
+      const { data: atrSemana } = await supabase
+        .from("atribuicoes")
+        .select("pessoa_id, pessoas(nome, tipo)")
+        .gte("semana_inicio", iS.toISOString().split("T")[0]);
+
+      const { data: atrTotal } = await supabase.from("atribuicoes").select("pessoa_id");
+
+      const contagemSemana = new Map<string, number>();
+      const contagemTotal = new Map<string, number>();
+      const nomesMap = new Map<string, { nome: string; tipo: string }>();
+
+      (atrSemana || []).forEach((a: any) => {
+        contagemSemana.set(a.pessoa_id, (contagemSemana.get(a.pessoa_id) || 0) + 1);
+        if (a.pessoas) nomesMap.set(a.pessoa_id, a.pessoas);
+      });
+      (atrTotal || []).forEach((a: any) => {
+        contagemTotal.set(a.pessoa_id, (contagemTotal.get(a.pessoa_id) || 0) + 1);
+      });
+
+      const ranking: Pessoa[] = Array.from(nomesMap.entries())
+        .map(([id, info]) => ({
+          id,
+          nome: info.nome,
+          tipo: info.tipo,
+          semana: contagemSemana.get(id) || 0,
+          total: contagemTotal.get(id) || 0,
+        }))
+        .sort((a, b) => b.total - a.total);
+
+      setPessoas(ranking);
     };
 
-    fetchStats();
+    fetchAll();
 
     const channel = supabase
-      .channel("dashboard-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "audiencias" }, fetchStats)
-      .on("postgres_changes", { event: "*", schema: "public", table: "pessoas" }, fetchStats)
+      .channel("dash")
+      .on("postgres_changes", { event: "*", schema: "public", table: "audiencias" }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "atribuicoes" }, fetchAll)
       .subscribe();
-
     return () => {
       supabase.removeChannel(channel);
     };
   }, []);
 
   useEffect(() => {
-    const fetchAudiencias = async () => {
+    const fetch = async () => {
       const { data } = await supabase
         .from("audiencias")
         .select("carteira, data_audiencia, status")
         .gte("data_audiencia", inicio.toISOString().split("T")[0])
         .lte("data_audiencia", fim.toISOString().split("T")[0]);
-
       setAudiencias(data || []);
     };
-
-    fetchAudiencias();
+    fetch();
   }, [inicio, fim]);
 
   const carteiraSummary = useMemo(() => {
-    const map: Record<string, { total: number; pendentes: number; atribuidas: number; concluidas: number }> = {};
+    const map: Record<string, { total: number; pendentes: number; atribuidas: number; realizadas: number }> = {};
     audiencias.forEach((a) => {
       const key = a.carteira || "Sem Carteira";
-      if (!map[key]) map[key] = { total: 0, pendentes: 0, atribuidas: 0, concluidas: 0 };
+      if (!map[key]) map[key] = { total: 0, pendentes: 0, atribuidas: 0, realizadas: 0 };
       map[key].total++;
       if (a.status === "pendente") map[key].pendentes++;
       else if (a.status === "atribuida") map[key].atribuidas++;
-      else if (a.status === "concluida") map[key].concluidas++;
+      else if (a.status === "realizada") map[key].realizadas++;
     });
     return Object.entries(map)
-      .map(([carteira, counts]) => ({ carteira, ...counts }))
+      .map(([carteira, c]) => ({ carteira, ...c }))
       .sort((a, b) => b.total - a.total);
   }, [audiencias]);
 
-  const filtroLabel = filtro === "dia" ? "Hoje" : filtro === "semana" ? "Esta Semana" : "Este Mês";
+  const taxaRealizacao = stats.totalAudiencias > 0 ? Math.round((stats.realizadas / stats.totalAudiencias) * 100) : 0;
+
+  const filtroLabel = filtro === "dia" ? "Hoje" : filtro === "semana" ? "Esta semana" : "Este mês";
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-4xl font-bold text-foreground mb-2">Dashboard</h1>
-        <p className="text-muted-foreground">Bem-vindo ao sistema de gestão de audiências</p>
+        <h1 className="text-3xl font-bold mb-1">Dashboard</h1>
+        <p className="text-muted-foreground">Gestão de audiências — visão geral</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950 dark:to-amber-900 border-amber-200 dark:border-amber-800">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-amber-700 dark:text-amber-300 mb-1">Audiências esta Semana</p>
-                <p className="text-4xl font-bold text-amber-900 dark:text-amber-100">{stats.audienciasEstaSemana}</p>
-              </div>
-              <div className="h-14 w-14 rounded-lg bg-amber-400 dark:bg-amber-600 flex items-center justify-center">
-                <Calendar className="h-7 w-7 text-amber-900 dark:text-amber-100" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Alertas */}
+      {alertas.length > 0 && (
+        <div className="space-y-2">
+          {alertas.map((a, i) => (
+            <Alert key={i} className="border-amber-400 bg-amber-50 dark:bg-amber-950">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-800 dark:text-amber-200">{a}</AlertDescription>
+            </Alert>
+          ))}
+        </div>
+      )}
 
-        <Card className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 border-slate-700">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-300 mb-1">Pendentes de Sorteio</p>
-                <p className="text-4xl font-bold text-white">{stats.pendentesSorteio}</p>
-              </div>
-              <div className="h-14 w-14 rounded-lg bg-slate-950 dark:bg-slate-800 flex items-center justify-center">
-                <Clock className="h-7 w-7 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 border-slate-300 dark:border-slate-600">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600 dark:text-slate-300 mb-1">Advogados Cadastrados</p>
-                <p className="text-4xl font-bold text-slate-900 dark:text-slate-100">{stats.advogadosCadastrados}</p>
-              </div>
-              <div className="h-14 w-14 rounded-lg bg-slate-300 dark:bg-slate-600 flex items-center justify-center">
-                <Scale className="h-7 w-7 text-slate-900 dark:text-slate-100" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 border-slate-700">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-300 mb-1">Prepostos Cadastrados</p>
-                <p className="text-4xl font-bold text-white">{stats.prepostosCadastrados}</p>
-              </div>
-              <div className="h-14 w-14 rounded-lg bg-slate-950 dark:bg-slate-800 flex items-center justify-center">
-                <Users className="h-7 w-7 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {[
+          { label: "Esta semana", value: stats.audienciasEstaSemana, icon: Calendar, color: "text-primary" },
+          {
+            label: "Pendentes",
+            value: stats.pendentesSorteio,
+            icon: Clock,
+            color: stats.pendentesSorteio > 0 ? "text-amber-600" : "text-green-600",
+          },
+          { label: "Advogados", value: stats.advogadosCadastrados, icon: Scale, color: "text-foreground" },
+          { label: "Prepostos", value: stats.prepostosCadastrados, icon: Users, color: "text-foreground" },
+          { label: "Total geral", value: stats.totalAudiencias, icon: TrendingUp, color: "text-foreground" },
+          {
+            label: "Taxa realização",
+            value: `${taxaRealizacao}%`,
+            icon: TrendingUp,
+            color: taxaRealizacao > 70 ? "text-green-600" : "text-amber-600",
+          },
+        ].map(({ label, value, icon: Icon, color }) => (
+          <Card key={label}>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground mb-1">{label}</p>
+              <p className={`text-2xl font-bold ${color}`}>{value}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
+      {/* Audiências por carteira */}
       <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-foreground">Audiências por Carteira — {filtroLabel}</h2>
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <CardTitle className="text-base">Audiências por carteira — {filtroLabel}</CardTitle>
             <Tabs value={filtro} onValueChange={(v) => setFiltro(v as FilterPeriod)}>
               <TabsList>
-                <TabsTrigger value="dia">Dia</TabsTrigger>
+                <TabsTrigger value="dia">Hoje</TabsTrigger>
                 <TabsTrigger value="semana">Semana</TabsTrigger>
                 <TabsTrigger value="mes">Mês</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
-
+        </CardHeader>
+        <CardContent>
           {carteiraSummary.length === 0 ? (
-            <p className="text-muted-foreground text-sm py-4 text-center">Nenhuma audiência encontrada no período.</p>
+            <p className="text-sm text-muted-foreground text-center py-6">Nenhuma audiência no período.</p>
           ) : (
             <Table>
               <TableHeader>
@@ -218,49 +248,83 @@ const DashboardHome = () => {
                   <TableHead className="text-center">Total</TableHead>
                   <TableHead className="text-center">Pendentes</TableHead>
                   <TableHead className="text-center">Atribuídas</TableHead>
-                  <TableHead className="text-center">Concluídas</TableHead>
+                  <TableHead className="text-center">Realizadas</TableHead>
+                  <TableHead className="text-center">Progresso</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {carteiraSummary.map((row) => (
-                  <TableRow key={row.carteira}>
-                    <TableCell className="font-medium">{row.carteira}</TableCell>
-                    <TableCell className="text-center">{row.total}</TableCell>
-                    <TableCell className="text-center">{row.pendentes}</TableCell>
-                    <TableCell className="text-center">{row.atribuidas}</TableCell>
-                    <TableCell className="text-center">{row.concluidas}</TableCell>
-                  </TableRow>
-                ))}
-                <TableRow className="font-bold border-t-2">
-                  <TableCell>Total</TableCell>
-                  <TableCell className="text-center">{carteiraSummary.reduce((s, r) => s + r.total, 0)}</TableCell>
-                  <TableCell className="text-center">{carteiraSummary.reduce((s, r) => s + r.pendentes, 0)}</TableCell>
-                  <TableCell className="text-center">{carteiraSummary.reduce((s, r) => s + r.atribuidas, 0)}</TableCell>
-                  <TableCell className="text-center">{carteiraSummary.reduce((s, r) => s + r.concluidas, 0)}</TableCell>
-                </TableRow>
+                {carteiraSummary.map((row) => {
+                  const pct = row.total > 0 ? Math.round((row.realizadas / row.total) * 100) : 0;
+                  return (
+                    <TableRow key={row.carteira}>
+                      <TableCell className="font-medium">{row.carteira}</TableCell>
+                      <TableCell className="text-center">{row.total}</TableCell>
+                      <TableCell className="text-center">
+                        {row.pendentes > 0 ? (
+                          <Badge variant="outline" className="text-amber-700 border-amber-400">
+                            {row.pendentes}
+                          </Badge>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">{row.atribuidas}</TableCell>
+                      <TableCell className="text-center">{row.realizadas}</TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 bg-muted rounded-full h-2">
+                            <div className="bg-green-500 h-2 rounded-full" style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="text-xs text-muted-foreground w-8">{pct}%</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
         </CardContent>
       </Card>
 
+      {/* Ranking de pessoas — balanceamento de carga */}
       <Card>
-        <CardContent className="p-6">
-          <h2 className="text-xl font-bold text-foreground mb-4">Resumo da Semana</h2>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between py-2 border-b">
-              <span className="text-foreground">Audiências Designadas</span>
-              <span className="text-primary font-semibold">{stats.audienciasDesignadas}</span>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Balanceamento de carga — esta semana
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {pessoas.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma atribuição esta semana.</p>
+          ) : (
+            <div className="space-y-2">
+              {pessoas.map((p) => (
+                <div key={p.id} className="flex items-center gap-3">
+                  <Badge
+                    variant={p.tipo === "advogado" ? "default" : "secondary"}
+                    className="w-20 justify-center text-xs shrink-0"
+                  >
+                    {p.tipo === "advogado" ? "Advogado" : "Preposto"}
+                  </Badge>
+                  <span className="text-sm flex-1 truncate">{p.nome}</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="w-20 bg-muted rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full ${p.semana >= 2 ? "bg-red-500" : p.semana === 1 ? "bg-amber-500" : "bg-green-500"}`}
+                        style={{ width: `${Math.min(p.semana * 50, 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-medium w-12 text-right">{p.semana}/2 sem.</span>
+                    <span className="text-xs text-muted-foreground w-14 text-right">{p.total} total</span>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="flex items-center justify-between py-2">
-              <span className="text-foreground">Total de Audiências</span>
-              <span className="font-semibold">{stats.totalAudiencias}</span>
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>
   );
-};
-
-export default DashboardHome;
+}
