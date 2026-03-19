@@ -140,6 +140,39 @@ export type Database = {
         }
         Relationships: []
       }
+      historico_sorteios: {
+        Row: {
+          atribuidas: number
+          created_at: string | null
+          detalhes: string | null
+          executado_em: string
+          id: string
+          presenciais: number
+          sem_disponivel: number
+          total: number
+        }
+        Insert: {
+          atribuidas?: number
+          created_at?: string | null
+          detalhes?: string | null
+          executado_em?: string
+          id?: string
+          presenciais?: number
+          sem_disponivel?: number
+          total?: number
+        }
+        Update: {
+          atribuidas?: number
+          created_at?: string | null
+          detalhes?: string | null
+          executado_em?: string
+          id?: string
+          presenciais?: number
+          sem_disponivel?: number
+          total?: number
+        }
+        Relationships: []
+      }
       pessoas: {
         Row: {
           ativo: boolean
