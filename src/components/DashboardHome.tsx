@@ -1,8 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar, Clock, Scale, Users } from "lucide-react";
-import { startOfWeek, endOfWeek } from "date-fns";
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay } from "date-fns";
+import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+type Audiencia = {
+  carteira: string | null;
+  data_audiencia: string | null;
+  status: string;
+};
+
+type FilterPeriod = "dia" | "semana" | "mes";
 
 const DashboardHome = () => {
   const [stats, setStats] = useState({
@@ -13,6 +23,20 @@ const DashboardHome = () => {
     audienciasDesignadas: 0,
     totalAudiencias: 0,
   });
+  const [audiencias, setAudiencias] = useState<Audiencia[]>([]);
+  const [filtro, setFiltro] = useState<FilterPeriod>("semana");
+
+  const { inicio, fim } = useMemo(() => {
+    const hoje = new Date();
+    switch (filtro) {
+      case "dia":
+        return { inicio: startOfDay(hoje), fim: endOfDay(hoje) };
+      case "semana":
+        return { inicio: startOfWeek(hoje, { weekStartsOn: 0 }), fim: endOfWeek(hoje, { weekStartsOn: 0 }) };
+      case "mes":
+        return { inicio: startOfMonth(hoje), fim: endOfMonth(hoje) };
+    }
+  }, [filtro]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -20,40 +44,34 @@ const DashboardHome = () => {
       const inicioSemana = startOfWeek(hoje, { weekStartsOn: 0 });
       const fimSemana = endOfWeek(hoje, { weekStartsOn: 0 });
 
-      // Audiências desta semana
       const { count: audienciasCount } = await supabase
         .from("audiencias")
         .select("*", { count: "exact", head: true })
         .gte("data_audiencia", inicioSemana.toISOString())
         .lte("data_audiencia", fimSemana.toISOString());
 
-      // Pendentes de sorteio
       const { count: pendentesCount } = await supabase
         .from("audiencias")
         .select("*", { count: "exact", head: true })
         .eq("status", "pendente");
 
-      // Advogados cadastrados
       const { count: advogadosCount } = await supabase
         .from("pessoas")
         .select("*", { count: "exact", head: true })
         .eq("tipo", "advogado")
         .eq("ativo", true);
 
-      // Prepostos cadastrados
       const { count: prepostosCount } = await supabase
         .from("pessoas")
         .select("*", { count: "exact", head: true })
         .eq("tipo", "preposto")
         .eq("ativo", true);
 
-      // Audiências designadas
       const { count: designadasCount } = await supabase
         .from("audiencias")
         .select("*", { count: "exact", head: true })
         .eq("status", "atribuida");
 
-      // Total de audiências
       const { count: totalCount } = await supabase
         .from("audiencias")
         .select("*", { count: "exact", head: true });
@@ -72,22 +90,45 @@ const DashboardHome = () => {
 
     const channel = supabase
       .channel("dashboard-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "audiencias" },
-        fetchStats
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "pessoas" },
-        fetchStats
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "audiencias" }, fetchStats)
+      .on("postgres_changes", { event: "*", schema: "public", table: "pessoas" }, fetchStats)
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  useEffect(() => {
+    const fetchAudiencias = async () => {
+      const { data } = await supabase
+        .from("audiencias")
+        .select("carteira, data_audiencia, status")
+        .gte("data_audiencia", inicio.toISOString().split("T")[0])
+        .lte("data_audiencia", fim.toISOString().split("T")[0]);
+
+      setAudiencias(data || []);
+    };
+
+    fetchAudiencias();
+  }, [inicio, fim]);
+
+  const carteiraSummary = useMemo(() => {
+    const map: Record<string, { total: number; pendentes: number; atribuidas: number; concluidas: number }> = {};
+    audiencias.forEach((a) => {
+      const key = a.carteira || "Sem Carteira";
+      if (!map[key]) map[key] = { total: 0, pendentes: 0, atribuidas: 0, concluidas: 0 };
+      map[key].total++;
+      if (a.status === "pendente") map[key].pendentes++;
+      else if (a.status === "atribuida") map[key].atribuidas++;
+      else if (a.status === "concluida") map[key].concluidas++;
+    });
+    return Object.entries(map)
+      .map(([carteira, counts]) => ({ carteira, ...counts }))
+      .sort((a, b) => b.total - a.total);
+  }, [audiencias]);
+
+  const filtroLabel = filtro === "dia" ? "Hoje" : filtro === "semana" ? "Esta Semana" : "Este Mês";
 
   return (
     <div className="space-y-8">
@@ -153,6 +194,55 @@ const DashboardHome = () => {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-foreground">Audiências por Carteira — {filtroLabel}</h2>
+            <Tabs value={filtro} onValueChange={(v) => setFiltro(v as FilterPeriod)}>
+              <TabsList>
+                <TabsTrigger value="dia">Dia</TabsTrigger>
+                <TabsTrigger value="semana">Semana</TabsTrigger>
+                <TabsTrigger value="mes">Mês</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          {carteiraSummary.length === 0 ? (
+            <p className="text-muted-foreground text-sm py-4 text-center">Nenhuma audiência encontrada no período.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Carteira</TableHead>
+                  <TableHead className="text-center">Total</TableHead>
+                  <TableHead className="text-center">Pendentes</TableHead>
+                  <TableHead className="text-center">Atribuídas</TableHead>
+                  <TableHead className="text-center">Concluídas</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {carteiraSummary.map((row) => (
+                  <TableRow key={row.carteira}>
+                    <TableCell className="font-medium">{row.carteira}</TableCell>
+                    <TableCell className="text-center">{row.total}</TableCell>
+                    <TableCell className="text-center">{row.pendentes}</TableCell>
+                    <TableCell className="text-center">{row.atribuidas}</TableCell>
+                    <TableCell className="text-center">{row.concluidas}</TableCell>
+                  </TableRow>
+                ))}
+                <TableRow className="font-bold border-t-2">
+                  <TableCell>Total</TableCell>
+                  <TableCell className="text-center">{carteiraSummary.reduce((s, r) => s + r.total, 0)}</TableCell>
+                  <TableCell className="text-center">{carteiraSummary.reduce((s, r) => s + r.pendentes, 0)}</TableCell>
+                  <TableCell className="text-center">{carteiraSummary.reduce((s, r) => s + r.atribuidas, 0)}</TableCell>
+                  <TableCell className="text-center">{carteiraSummary.reduce((s, r) => s + r.concluidas, 0)}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="p-6">
