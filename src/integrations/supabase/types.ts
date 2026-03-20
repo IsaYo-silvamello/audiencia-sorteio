@@ -176,36 +176,42 @@ export type Database = {
       pessoas: {
         Row: {
           ativo: boolean
+          carteira: string | null
           created_at: string
           documento: string | null
           equipe: string | null
           estado: string | null
           id: string
           nome: string
+          observacao: string | null
           tipo: string
           tipo_advogado: string | null
           valor_audiencia: number | null
         }
         Insert: {
           ativo?: boolean
+          carteira?: string | null
           created_at?: string
           documento?: string | null
           equipe?: string | null
           estado?: string | null
           id?: string
           nome: string
+          observacao?: string | null
           tipo: string
           tipo_advogado?: string | null
           valor_audiencia?: number | null
         }
         Update: {
           ativo?: boolean
+          carteira?: string | null
           created_at?: string
           documento?: string | null
           equipe?: string | null
           estado?: string | null
           id?: string
           nome?: string
+          observacao?: string | null
           tipo?: string
           tipo_advogado?: string | null
           valor_audiencia?: number | null
