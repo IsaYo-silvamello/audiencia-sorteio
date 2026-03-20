@@ -64,7 +64,7 @@ const CARTEIRAS = [
   "ELETROBRÁS",
   "MELI",
   "PLANOS ECONÔMICOS",
-  "ITAU - GOLPES",
+  
   "BRADESCO",
 ];
 
