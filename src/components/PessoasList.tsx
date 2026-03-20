@@ -456,6 +456,8 @@ const PessoasList = () => {
               )}
 
               {renderEquipeSelect(formData.equipe, (v) => setFormData({ ...formData, equipe: v }))}
+              {renderCarteiraSelect(formData.carteira, (v) => setFormData({ ...formData, carteira: v }))}
+              {renderObservacaoSelect(formData.observacao, (v) => setFormData({ ...formData, observacao: v }))}
 
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Cadastrando..." : "Cadastrar"}
