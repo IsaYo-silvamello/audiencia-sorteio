@@ -92,6 +92,8 @@ const PessoasList = () => {
     estado: "",
     valor_audiencia: "",
     equipe: "",
+    carteira: "",
+    observacao: "",
   });
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
