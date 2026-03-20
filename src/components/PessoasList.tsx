@@ -568,6 +568,8 @@ const PessoasList = () => {
               </>
             )}
             {renderEquipeSelect(editData.equipe, (v) => setEditData({ ...editData, equipe: v }))}
+            {renderCarteiraSelect(editData.carteira, (v) => setEditData({ ...editData, carteira: v }))}
+            {renderObservacaoSelect(editData.observacao, (v) => setEditData({ ...editData, observacao: v }))}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditPessoa(null)}>Cancelar</Button>
