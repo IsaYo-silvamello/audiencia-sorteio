@@ -225,6 +225,8 @@ const PessoasList = () => {
         tipo: editData.tipo,
         documento: editData.documento || null,
         equipe: editData.equipe || null,
+        carteira: editData.carteira || null,
+        observacao: editData.observacao || null,
       };
 
       if (editData.tipo === "advogado") {
