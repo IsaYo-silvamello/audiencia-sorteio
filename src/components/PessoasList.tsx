@@ -65,6 +65,7 @@ const CARTEIRAS = [
   "MELI",
   "PLANOS ECONÔMICOS",
   "ITAU - GOLPES",
+  "BRADESCO",
 ];
 
 const OBSERVACOES = ["Faz SE", "Não faz SE"];
