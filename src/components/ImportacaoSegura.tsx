@@ -66,48 +66,50 @@ const ImportacaoSegura = () => {
   const { toast } = useToast();
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setImporting(true);
     setResult(null);
 
+    let totalRows = 0;
+    let totalInserted = 0;
+
     try {
-      const buffer = await file.arrayBuffer();
-      const wb = XLSX.read(buffer, { type: "array" });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+      for (const file of Array.from(files)) {
+        const buffer = await file.arrayBuffer();
+        const wb = XLSX.read(buffer, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
 
-      if (rows.length === 0) {
-        toast({ title: "Planilha vazia", variant: "destructive" });
-        setImporting(false);
-        return;
-      }
+        if (rows.length === 0) continue;
 
-      const headers = Object.keys(rows[0]);
-      const mapped = headers.reduce<Record<string, string>>((acc, h) => {
-        const key = h.trim().toUpperCase();
-        if (HEADER_MAP[key]) acc[h] = HEADER_MAP[key];
-        return acc;
-      }, {});
+        const headers = Object.keys(rows[0]);
+        const mapped = headers.reduce<Record<string, string>>((acc, h) => {
+          const key = h.trim().toUpperCase();
+          if (HEADER_MAP[key]) acc[h] = HEADER_MAP[key];
+          return acc;
+        }, {});
 
-      let inserted = 0;
-      for (const row of rows) {
-        const record: Record<string, any> = { autor: "Desconhecido", reu: "Desconhecido", status: "pendente" };
-        for (const [excelCol, dbCol] of Object.entries(mapped)) {
-          let val = row[excelCol];
-          if (dbCol === "data_audiencia") val = parseExcelDate(val);
-          if (val !== "" && val !== null && val !== undefined) record[dbCol] = String(val);
+        for (const row of rows) {
+          const record: Record<string, any> = { autor: "Desconhecido", reu: "Desconhecido", status: "pendente" };
+          for (const [excelCol, dbCol] of Object.entries(mapped)) {
+            let val = row[excelCol];
+            if (dbCol === "data_audiencia") val = parseExcelDate(val);
+            if (val !== "" && val !== null && val !== undefined) record[dbCol] = String(val);
+          }
+          if (!record.autor || record.autor === "") record.autor = "Desconhecido";
+          if (!record.reu || record.reu === "") record.reu = "Desconhecido";
+
+          const { error } = await supabase.from("audiencias").insert(record);
+          if (!error) totalInserted++;
         }
-        if (!record.autor || record.autor === "") record.autor = "Desconhecido";
-        if (!record.reu || record.reu === "") record.reu = "Desconhecido";
 
-        const { error } = await supabase.from("audiencias").insert(record);
-        if (!error) inserted++;
+        totalRows += rows.length;
       }
 
-      setResult({ total: rows.length, inserted });
-      toast({ title: `${inserted} audiências importadas de ${rows.length}` });
+      setResult({ total: totalRows, inserted: totalInserted });
+      toast({ title: `${totalInserted} audiências importadas de ${totalRows} (${files.length} arquivo${files.length > 1 ? "s" : ""})` });
     } catch (err: any) {
       toast({ title: "Erro na importação", description: err.message, variant: "destructive" });
     } finally {
