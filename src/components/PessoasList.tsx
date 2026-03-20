@@ -211,6 +211,8 @@ const PessoasList = () => {
       estado: pessoa.estado || "",
       valor_audiencia: pessoa.valor_audiencia?.toString() || "",
       equipe: pessoa.equipe || "",
+      carteira: pessoa.carteira || "",
+      observacao: pessoa.observacao || "",
     });
   };
 
