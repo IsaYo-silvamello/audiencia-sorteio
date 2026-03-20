@@ -163,6 +163,8 @@ const PessoasList = () => {
         estado: "",
         valor_audiencia: "",
         equipe: "",
+        carteira: "",
+        observacao: "",
       });
       fetchPessoas();
     } catch (error: any) {
