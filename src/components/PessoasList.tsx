@@ -66,6 +66,7 @@ const CARTEIRAS = [
   "PLANOS ECONÔMICOS",
   
   "BRADESCO",
+  "VIVO",
 ];
 
 const OBSERVACOES = ["Faz SE", "Não faz SE"];
