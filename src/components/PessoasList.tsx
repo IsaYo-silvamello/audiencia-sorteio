@@ -134,6 +134,8 @@ const PessoasList = () => {
         documento: formData.documento || null,
         ativo: true,
         equipe: formData.equipe || null,
+        carteira: formData.carteira || null,
+        observacao: formData.observacao || null,
       };
 
       if (formData.tipo === "advogado") {
