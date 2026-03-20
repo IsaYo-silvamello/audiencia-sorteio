@@ -266,14 +266,46 @@ const PessoasList = () => {
 
   const renderEquipeSelect = (value: string, onChange: (v: string) => void) => (
     <div className="space-y-2">
-      <Label>Equipe / Carteira</Label>
+      <Label>Equipe (Cliente)</Label>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger>
-          <SelectValue placeholder="Selecione a equipe" />
+          <SelectValue placeholder="Selecione o cliente" />
         </SelectTrigger>
         <SelectContent>
           {EQUIPES.map((eq) => (
             <SelectItem key={eq} value={eq}>{eq}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
+  const renderCarteiraSelect = (value: string, onChange: (v: string) => void) => (
+    <div className="space-y-2">
+      <Label>Carteira (Assunto)</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger>
+          <SelectValue placeholder="Selecione a carteira" />
+        </SelectTrigger>
+        <SelectContent>
+          {CARTEIRAS.map((c) => (
+            <SelectItem key={c} value={c}>{c}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
+  const renderObservacaoSelect = (value: string, onChange: (v: string) => void) => (
+    <div className="space-y-2">
+      <Label>Observação</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger>
+          <SelectValue placeholder="Selecione" />
+        </SelectTrigger>
+        <SelectContent>
+          {OBSERVACOES.map((o) => (
+            <SelectItem key={o} value={o}>{o}</SelectItem>
           ))}
         </SelectContent>
       </Select>
