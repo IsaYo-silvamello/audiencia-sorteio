@@ -80,6 +80,8 @@ const PessoasList = () => {
     estado: "",
     valor_audiencia: "",
     equipe: "",
+    carteira: "",
+    observacao: "",
   });
   const [editPessoa, setEditPessoa] = useState<Pessoa | null>(null);
   const [editData, setEditData] = useState({
