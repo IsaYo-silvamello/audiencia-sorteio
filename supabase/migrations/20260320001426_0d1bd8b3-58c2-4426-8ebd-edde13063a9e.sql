@@ -1,0 +1,2 @@
+ALTER TABLE public.pessoas ADD COLUMN IF NOT EXISTS carteira text DEFAULT NULL;
+ALTER TABLE public.pessoas ADD COLUMN IF NOT EXISTS observacao text DEFAULT NULL;

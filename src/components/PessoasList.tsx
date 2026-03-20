@@ -33,21 +33,41 @@ interface Pessoa {
   estado?: string | null;
   valor_audiencia?: number | null;
   equipe?: string | null;
+  carteira?: string | null;
+  observacao?: string | null;
 }
 
 const EQUIPES = [
+  "ELETROBRÁS",
+  "ELETROBRÁS/GERAL",
+  "ITAÚ",
+  "GERAL",
   "MELI",
-  "Fraudes e Ilícitos",
-  "Cobrança DCR-PF Superendividados",
-  "Serviços Bancários",
-  "Vivo - Telefônica",
-  "CREDICARD",
-  "JV ITAU BMG",
-  "ContraCobrança DCR - PF",
-  "DCR PF Cobrança",
+  "BRADESCO/MELI",
   "BRADESCO",
-  "Planos Econômicos",
+  "VIVO",
 ];
+
+const CARTEIRAS = [
+  "GERAL",
+  "GOLPES",
+  "TRIBUNAIS SUPERIORES",
+  "SUPERENDIVIDAMENTO",
+  "CARTÕES",
+  "DCRPF",
+  "OBP",
+  "CONSIGNADO",
+  "OBF",
+  "SERVIÇOS BANCÁRIOS",
+  "FRAUDES E ILÍCITOS",
+  "SUCUMBÊNCIAS",
+  "ELETROBRÁS",
+  "NOS ECONÔMICOS",
+  "PLANOS ECONÔMICOS",
+  "ITAU - GOLPES",
+];
+
+const OBSERVACOES = ["Faz SE", "Não faz SE"];
 
 const PessoasList = () => {
   const [pessoas, setPessoas] = useState<Pessoa[]>([]);
@@ -60,6 +80,8 @@ const PessoasList = () => {
     estado: "",
     valor_audiencia: "",
     equipe: "",
+    carteira: "",
+    observacao: "",
   });
   const [editPessoa, setEditPessoa] = useState<Pessoa | null>(null);
   const [editData, setEditData] = useState({
@@ -70,6 +92,8 @@ const PessoasList = () => {
     estado: "",
     valor_audiencia: "",
     equipe: "",
+    carteira: "",
+    observacao: "",
   });
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -110,6 +134,8 @@ const PessoasList = () => {
         documento: formData.documento || null,
         ativo: true,
         equipe: formData.equipe || null,
+        carteira: formData.carteira || null,
+        observacao: formData.observacao || null,
       };
 
       if (formData.tipo === "advogado") {
@@ -137,6 +163,8 @@ const PessoasList = () => {
         estado: "",
         valor_audiencia: "",
         equipe: "",
+        carteira: "",
+        observacao: "",
       });
       fetchPessoas();
     } catch (error: any) {
@@ -183,6 +211,8 @@ const PessoasList = () => {
       estado: pessoa.estado || "",
       valor_audiencia: pessoa.valor_audiencia?.toString() || "",
       equipe: pessoa.equipe || "",
+      carteira: pessoa.carteira || "",
+      observacao: pessoa.observacao || "",
     });
   };
 
@@ -195,6 +225,8 @@ const PessoasList = () => {
         tipo: editData.tipo,
         documento: editData.documento || null,
         equipe: editData.equipe || null,
+        carteira: editData.carteira || null,
+        observacao: editData.observacao || null,
       };
 
       if (editData.tipo === "advogado") {
@@ -234,14 +266,46 @@ const PessoasList = () => {
 
   const renderEquipeSelect = (value: string, onChange: (v: string) => void) => (
     <div className="space-y-2">
-      <Label>Equipe / Carteira</Label>
+      <Label>Equipe (Cliente)</Label>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger>
-          <SelectValue placeholder="Selecione a equipe" />
+          <SelectValue placeholder="Selecione o cliente" />
         </SelectTrigger>
         <SelectContent>
           {EQUIPES.map((eq) => (
             <SelectItem key={eq} value={eq}>{eq}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
+  const renderCarteiraSelect = (value: string, onChange: (v: string) => void) => (
+    <div className="space-y-2">
+      <Label>Carteira (Assunto)</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger>
+          <SelectValue placeholder="Selecione a carteira" />
+        </SelectTrigger>
+        <SelectContent>
+          {CARTEIRAS.map((c) => (
+            <SelectItem key={c} value={c}>{c}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
+  const renderObservacaoSelect = (value: string, onChange: (v: string) => void) => (
+    <div className="space-y-2">
+      <Label>Observação</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger>
+          <SelectValue placeholder="Selecione" />
+        </SelectTrigger>
+        <SelectContent>
+          {OBSERVACOES.map((o) => (
+            <SelectItem key={o} value={o}>{o}</SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -269,7 +333,13 @@ const PessoasList = () => {
               <span>Valor: R$ {pessoa.valor_audiencia.toFixed(2)}</span>
             )}
             {pessoa.equipe && (
-              <span className="text-primary font-medium">Equipe: {pessoa.equipe}</span>
+              <span className="text-primary font-medium">Cliente: {pessoa.equipe}</span>
+            )}
+            {pessoa.carteira && (
+              <span>Carteira: {pessoa.carteira}</span>
+            )}
+            {pessoa.observacao && (
+              <span>Obs: {pessoa.observacao}</span>
             )}
           </div>
         </div>
@@ -386,6 +456,8 @@ const PessoasList = () => {
               )}
 
               {renderEquipeSelect(formData.equipe, (v) => setFormData({ ...formData, equipe: v }))}
+              {renderCarteiraSelect(formData.carteira, (v) => setFormData({ ...formData, carteira: v }))}
+              {renderObservacaoSelect(formData.observacao, (v) => setFormData({ ...formData, observacao: v }))}
 
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Cadastrando..." : "Cadastrar"}
@@ -496,6 +568,8 @@ const PessoasList = () => {
               </>
             )}
             {renderEquipeSelect(editData.equipe, (v) => setEditData({ ...editData, equipe: v }))}
+            {renderCarteiraSelect(editData.carteira, (v) => setEditData({ ...editData, carteira: v }))}
+            {renderObservacaoSelect(editData.observacao, (v) => setEditData({ ...editData, observacao: v }))}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditPessoa(null)}>Cancelar</Button>
