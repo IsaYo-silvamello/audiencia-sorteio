@@ -333,7 +333,13 @@ const PessoasList = () => {
               <span>Valor: R$ {pessoa.valor_audiencia.toFixed(2)}</span>
             )}
             {pessoa.equipe && (
-              <span className="text-primary font-medium">Equipe: {pessoa.equipe}</span>
+              <span className="text-primary font-medium">Cliente: {pessoa.equipe}</span>
+            )}
+            {pessoa.carteira && (
+              <span>Carteira: {pessoa.carteira}</span>
+            )}
+            {pessoa.observacao && (
+              <span>Obs: {pessoa.observacao}</span>
             )}
           </div>
         </div>
