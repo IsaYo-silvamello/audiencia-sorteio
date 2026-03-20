@@ -136,6 +136,7 @@ const ImportacaoSegura = () => {
           ref={fileRef}
           type="file"
           accept=".xlsx,.xls"
+          multiple
           className="hidden"
           onChange={handleFile}
         />
