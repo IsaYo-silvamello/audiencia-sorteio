@@ -33,21 +33,41 @@ interface Pessoa {
   estado?: string | null;
   valor_audiencia?: number | null;
   equipe?: string | null;
+  carteira?: string | null;
+  observacao?: string | null;
 }
 
 const EQUIPES = [
+  "ELETROBRÁS",
+  "ELETROBRÁS/GERAL",
+  "ITAÚ",
+  "GERAL",
   "MELI",
-  "Fraudes e Ilícitos",
-  "Cobrança DCR-PF Superendividados",
-  "Serviços Bancários",
-  "Vivo - Telefônica",
-  "CREDICARD",
-  "JV ITAU BMG",
-  "ContraCobrança DCR - PF",
-  "DCR PF Cobrança",
+  "BRADESCO/MELI",
   "BRADESCO",
-  "Planos Econômicos",
+  "VIVO",
 ];
+
+const CARTEIRAS = [
+  "GERAL",
+  "GOLPES",
+  "TRIBUNAIS SUPERIORES",
+  "SUPERENDIVIDAMENTO",
+  "CARTÕES",
+  "DCRPF",
+  "OBP",
+  "CONSIGNADO",
+  "OBF",
+  "SERVIÇOS BANCÁRIOS",
+  "FRAUDES E ILÍCITOS",
+  "SUCUMBÊNCIAS",
+  "ELETROBRÁS",
+  "NOS ECONÔMICOS",
+  "PLANOS ECONÔMICOS",
+  "ITAU - GOLPES",
+];
+
+const OBSERVACOES = ["Faz SE", "Não faz SE"];
 
 const PessoasList = () => {
   const [pessoas, setPessoas] = useState<Pessoa[]>([]);
