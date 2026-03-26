@@ -173,6 +173,33 @@ export type Database = {
         }
         Relationships: []
       }
+      pautas_semanais: {
+        Row: {
+          created_at: string | null
+          finalizada_em: string | null
+          id: string
+          semana_fim: string
+          semana_inicio: string
+          status: string
+        }
+        Insert: {
+          created_at?: string | null
+          finalizada_em?: string | null
+          id?: string
+          semana_fim: string
+          semana_inicio: string
+          status?: string
+        }
+        Update: {
+          created_at?: string | null
+          finalizada_em?: string | null
+          id?: string
+          semana_fim?: string
+          semana_inicio?: string
+          status?: string
+        }
+        Relationships: []
+      }
       pessoas: {
         Row: {
           ativo: boolean
