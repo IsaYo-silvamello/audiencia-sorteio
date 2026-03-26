@@ -1,8 +1,5 @@
-// src/components/SorteioAudiencias.tsx
-// Substitui o arquivo atual — usa o hook useSorteio centralizado
-
-import { useState } from "react";
-import { useSorteio } from "@/hooks/useSorteio";
+import { useState, useEffect } from "react";
+import { useSorteio, SemanaDisponivel } from "@/hooks/useSorteio";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,12 +14,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Shuffle, AlertCircle, CheckCircle2, XCircle, MapPin, ChevronDown, ChevronUp } from "lucide-react";
+import { Shuffle, AlertCircle, CheckCircle2, XCircle, MapPin, ChevronDown, ChevronUp, CalendarCheck, Calendar } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const SorteioAudiencias = () => {
-  const { status, resultado, realizarSorteio, limpar } = useSorteio();
+  const { status, resultado, realizarSorteio, limpar, semanasDisponiveis, carregarSemanas } = useSorteio();
   const [confirmar, setConfirmar] = useState(false);
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
+  const [semanaSelecionada, setSemanaSelecionada] = useState<string | null>(null);
+
+  useEffect(() => {
+    carregarSemanas();
+  }, []);
 
   const toggleExpand = (id: string) =>
     setExpandidos((prev) => {
@@ -33,7 +37,18 @@ const SorteioAudiencias = () => {
 
   const executar = async () => {
     setConfirmar(false);
-    await realizarSorteio();
+    if (semanaSelecionada) {
+      await realizarSorteio(semanaSelecionada);
+    }
+  };
+
+  const semanasNaoSorteadas = semanasDisponiveis.filter((s) => !s.sorteada);
+  const semanasSorteadas = semanasDisponiveis.filter((s) => s.sorteada);
+
+  const formatSemana = (inicio: string, fim: string) => {
+    const d1 = new Date(inicio + "T00:00:00");
+    const d2 = new Date(fim + "T00:00:00");
+    return `${format(d1, "dd/MM", { locale: ptBR })} a ${format(d2, "dd/MM/yyyy", { locale: ptBR })}`;
   };
 
   return (
@@ -48,7 +63,7 @@ const SorteioAudiencias = () => {
             <div>
               <CardTitle>Sorteio de Audiências</CardTitle>
               <CardDescription>
-                Distribui automaticamente respeitando carteira e limite de {2} por semana
+                Distribui automaticamente respeitando carteira e limite de 3 por dia
               </CardDescription>
             </div>
           </div>
@@ -58,10 +73,45 @@ const SorteioAudiencias = () => {
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               O sorteio respeita a <strong>carteira/equipe</strong> de cada advogado e preposto, e o limite de{" "}
-              <strong>2 audiências por pessoa por semana</strong>. Audiências presenciais são marcadas para
+              <strong>3 audiências por pessoa por dia</strong>. Audiências presenciais são marcadas para
               correspondente sem sortear ninguém.
             </AlertDescription>
           </Alert>
+
+          {/* Seleção de semana */}
+          {semanasNaoSorteadas.length > 0 ? (
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-foreground">Selecione a semana para sortear:</p>
+              <div className="grid gap-2">
+                {semanasNaoSorteadas.map((sem) => (
+                  <button
+                    key={sem.inicio}
+                    onClick={() => setSemanaSelecionada(sem.inicio)}
+                    className={`flex items-center justify-between p-3 rounded-lg border transition-colors text-left ${
+                      semanaSelecionada === sem.inicio
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                        : "border-border hover:bg-muted/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Calendar className="h-4 w-4 text-primary shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium">{formatSemana(sem.inicio, sem.fim)}</p>
+                        <p className="text-xs text-muted-foreground">{sem.totalAudiencias} audiências</p>
+                      </div>
+                    </div>
+                    {semanaSelecionada === sem.inicio && (
+                      <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-4 text-sm text-muted-foreground">
+              Nenhuma semana disponível para sorteio. Importe planilhas primeiro.
+            </div>
+          )}
 
           <div className="flex gap-3">
             <Button
@@ -69,7 +119,7 @@ const SorteioAudiencias = () => {
                 limpar();
                 setConfirmar(true);
               }}
-              disabled={status === "executando"}
+              disabled={status === "executando" || !semanaSelecionada}
               className="flex-1"
               size="lg"
             >
@@ -84,6 +134,44 @@ const SorteioAudiencias = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Semanas já sorteadas */}
+      {semanasSorteadas.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <CalendarCheck className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-base">Semanas já sorteadas</CardTitle>
+                <CardDescription>Histórico de sorteios realizados por semana</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {semanasSorteadas.map((sem) => (
+              <div
+                key={sem.inicio}
+                className="flex items-center justify-between p-3 rounded-lg border bg-muted/30"
+              >
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">{formatSemana(sem.inicio, sem.fim)}</p>
+                    <p className="text-xs text-muted-foreground">{sem.totalAudiencias} audiências</p>
+                  </div>
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  Sorteado em {sem.dataSorteio
+                    ? format(new Date(sem.dataSorteio), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+                    : "—"}
+                </Badge>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Resumo do resultado */}
       {resultado && (
@@ -104,7 +192,7 @@ const SorteioAudiencias = () => {
         </div>
       )}
 
-      {/* Lista detalhada com motivo (transparência) */}
+      {/* Lista detalhada */}
       {resultado && resultado.itens.length > 0 && (
         <Card>
           <CardHeader>
@@ -181,8 +269,20 @@ const SorteioAudiencias = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar sorteio</AlertDialogTitle>
             <AlertDialogDescription>
-              O sorteio vai atribuir <strong>todas as audiências pendentes</strong> para advogados e prepostos
-              disponíveis. Essa ação não pode ser desfeita automaticamente. Deseja continuar?
+              O sorteio vai atribuir as audiências pendentes da semana{" "}
+              <strong>
+                {semanaSelecionada
+                  ? formatSemana(
+                      semanaSelecionada,
+                      (() => {
+                        const d = new Date(semanaSelecionada + "T00:00:00");
+                        d.setDate(d.getDate() + 6);
+                        return d.toISOString().split("T")[0];
+                      })()
+                    )
+                  : ""}
+              </strong>{" "}
+              para advogados e prepostos disponíveis. Essa ação não pode ser desfeita automaticamente. Deseja continuar?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

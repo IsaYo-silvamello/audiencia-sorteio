@@ -30,15 +30,29 @@ interface Resultado {
   itens: ResultadoItem[];
 }
 
+export interface SemanaDisponivel {
+  inicio: string;
+  fim: string;
+  totalAudiencias: number;
+  sorteada: boolean;
+  dataSorteio?: string;
+}
+
 type Status = "idle" | "executando" | "concluido" | "erro";
 
-const LIMITE_SEMANAL = 2;
+const LIMITE_DIARIO = 3;
 
-function getInicioSemana(date: Date): string {
-  const d = new Date(date);
+function getInicioSemana(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   d.setDate(diff);
+  return d.toISOString().split("T")[0];
+}
+
+function getFimSemana(inicioStr: string): string {
+  const d = new Date(inicioStr + "T00:00:00");
+  d.setDate(d.getDate() + 6);
   return d.toISOString().split("T")[0];
 }
 
@@ -76,6 +90,7 @@ function getEquipeCorrespondente(uf: string | null): string {
 export function useSorteio() {
   const [status, setStatus] = useState<Status>("idle");
   const [resultado, setResultado] = useState<Resultado | null>(null);
+  const [semanasDisponiveis, setSemanasDisponiveis] = useState<SemanaDisponivel[]>([]);
   const { toast } = useToast();
 
   const limpar = () => {
@@ -83,17 +98,69 @@ export function useSorteio() {
     setStatus("idle");
   };
 
-  const realizarSorteio = async () => {
+  const carregarSemanas = async () => {
+    // Get all audiências with dates
+    const { data: audiencias } = await supabase
+      .from("audiencias")
+      .select("data_audiencia")
+      .not("data_audiencia", "is", null);
+
+    if (!audiencias || audiencias.length === 0) {
+      setSemanasDisponiveis([]);
+      return;
+    }
+
+    // Group by week
+    const semanasMap: Record<string, number> = {};
+    for (const aud of audiencias) {
+      if (!aud.data_audiencia) continue;
+      const inicio = getInicioSemana(aud.data_audiencia);
+      semanasMap[inicio] = (semanasMap[inicio] || 0) + 1;
+    }
+
+    // Get sorteios already done (with semana_inicio)
+    const { data: sorteios } = await supabase
+      .from("historico_sorteios")
+      .select("semana_inicio, executado_em");
+
+    const sorteioMap: Record<string, string> = {};
+    if (sorteios) {
+      for (const s of sorteios) {
+        if ((s as any).semana_inicio) {
+          sorteioMap[(s as any).semana_inicio] = s.executado_em;
+        }
+      }
+    }
+
+    const semanas: SemanaDisponivel[] = Object.entries(semanasMap)
+      .map(([inicio, total]) => ({
+        inicio,
+        fim: getFimSemana(inicio),
+        totalAudiencias: total,
+        sorteada: !!sorteioMap[inicio],
+        dataSorteio: sorteioMap[inicio] || undefined,
+      }))
+      .sort((a, b) => a.inicio.localeCompare(b.inicio));
+
+    setSemanasDisponiveis(semanas);
+  };
+
+  const realizarSorteio = async (semanaInicio: string) => {
     setStatus("executando");
+    const semanaFim = getFimSemana(semanaInicio);
+
     try {
-      // Buscar audiências pendentes
+      // Buscar audiências pendentes da semana selecionada
       const { data: audiencias, error: errAud } = await supabase
         .from("audiencias")
         .select("*")
-        .eq("status", "pendente");
+        .eq("status", "pendente")
+        .gte("data_audiencia", semanaInicio)
+        .lte("data_audiencia", semanaFim);
+
       if (errAud) throw errAud;
       if (!audiencias || audiencias.length === 0) {
-        toast({ title: "Nenhuma audiência pendente encontrada" });
+        toast({ title: "Nenhuma audiência pendente nesta semana" });
         setStatus("idle");
         return;
       }
@@ -108,29 +175,40 @@ export function useSorteio() {
       const advogados = (pessoas || []).filter((p) => p.tipo === "advogado");
       const prepostos = (pessoas || []).filter((p) => p.tipo === "preposto");
 
-      const semanaInicio = getInicioSemana(new Date());
-
-      // Buscar atribuições da semana
+      // Buscar atribuições existentes da semana para contar por dia
       const { data: atribuicoes } = await supabase
         .from("atribuicoes")
-        .select("*")
+        .select("*, audiencias!inner(data_audiencia)")
         .eq("semana_inicio", semanaInicio);
 
-      const contagem: Record<string, number> = {};
-      (atribuicoes || []).forEach((a) => {
-        contagem[a.pessoa_id] = (contagem[a.pessoa_id] || 0) + 1;
+      // Contagem por pessoa por dia
+      const contagemDiaria: Record<string, Record<string, number>> = {};
+      (atribuicoes || []).forEach((a: any) => {
+        const dia = a.audiencias?.data_audiencia || "unknown";
+        if (!contagemDiaria[a.pessoa_id]) contagemDiaria[a.pessoa_id] = {};
+        contagemDiaria[a.pessoa_id][dia] = (contagemDiaria[a.pessoa_id][dia] || 0) + 1;
       });
+
+      const getContagemDia = (pessoaId: string, dia: string) => {
+        return contagemDiaria[pessoaId]?.[dia] || 0;
+      };
+
+      const addContagem = (pessoaId: string, dia: string) => {
+        if (!contagemDiaria[pessoaId]) contagemDiaria[pessoaId] = {};
+        contagemDiaria[pessoaId][dia] = (contagemDiaria[pessoaId][dia] || 0) + 1;
+      };
 
       const itens: ResultadoItem[] = [];
       let atribuidas = 0;
-      let presenciais = 0;
+      let presenciaisCount = 0;
       let semDisponivel = 0;
 
       for (const aud of audiencias) {
         const presencial = isPresencial(aud);
+        const diaAudiencia = aud.data_audiencia || "unknown";
 
         if (presencial) {
-          presenciais++;
+          presenciaisCount++;
           const uf = extrairUF(aud.numero_processo);
           const equipe = getEquipeCorrespondente(uf);
           itens.push({
@@ -151,15 +229,15 @@ export function useSorteio() {
           continue;
         }
 
-        // Filtrar por carteira/equipe
+        // Filtrar por carteira/equipe e limite diário
         const carteira = aud.carteira?.toUpperCase() || "";
         const advDisponiveis = advogados.filter((a) => {
-          if ((contagem[a.id] || 0) >= LIMITE_SEMANAL) return false;
+          if (getContagemDia(a.id, diaAudiencia) >= LIMITE_DIARIO) return false;
           if (carteira && a.equipe) return a.equipe.toUpperCase() === carteira;
           return !carteira;
         });
         const prepDisponiveis = prepostos.filter((p) => {
-          if ((contagem[p.id] || 0) >= LIMITE_SEMANAL) return false;
+          if (getContagemDia(p.id, diaAudiencia) >= LIMITE_DIARIO) return false;
           if (carteira && p.equipe) return p.equipe.toUpperCase() === carteira;
           return !carteira;
         });
@@ -173,7 +251,7 @@ export function useSorteio() {
             presencial: false,
             advogado: null,
             preposto: null,
-            motivo: `Nenhum advogado disponível para carteira "${carteira || "geral"}"`,
+            motivo: `Nenhum advogado disponível para carteira "${carteira || "geral"}" no dia ${diaAudiencia}`,
           });
           continue;
         }
@@ -183,8 +261,8 @@ export function useSorteio() {
           ? prepDisponiveis[Math.floor(Math.random() * prepDisponiveis.length)]
           : null;
 
-        contagem[advSorteado.id] = (contagem[advSorteado.id] || 0) + 1;
-        if (prepSorteado) contagem[prepSorteado.id] = (contagem[prepSorteado.id] || 0) + 1;
+        addContagem(advSorteado.id, diaAudiencia);
+        if (prepSorteado) addContagem(prepSorteado.id, diaAudiencia);
 
         // Salvar atribuições
         const atribBatch = [
@@ -219,19 +297,20 @@ export function useSorteio() {
       const res: Resultado = {
         total: audiencias.length,
         atribuidas,
-        presenciais,
+        presenciais: presenciaisCount,
         semDisponivel,
         itens,
       };
       setResultado(res);
       setStatus("concluido");
 
-      // Salvar histórico
+      // Salvar histórico com semana
       await (supabase.from("historico_sorteios" as any) as any).insert({
         total: res.total,
         atribuidas: res.atribuidas,
         presenciais: res.presenciais,
         sem_disponivel: res.semDisponivel,
+        semana_inicio: semanaInicio,
         detalhes: JSON.stringify(res.itens.map((i) => ({
           processo: i.processo,
           advogado: i.advogado?.nome,
@@ -240,6 +319,8 @@ export function useSorteio() {
         }))),
       });
 
+      await carregarSemanas();
+
       toast({ title: "Sorteio realizado!", description: `${atribuidas} audiências atribuídas` });
     } catch (err: any) {
       setStatus("erro");
@@ -247,5 +328,5 @@ export function useSorteio() {
     }
   };
 
-  return { status, resultado, realizarSorteio, limpar };
+  return { status, resultado, realizarSorteio, limpar, semanasDisponiveis, carregarSemanas };
 }
