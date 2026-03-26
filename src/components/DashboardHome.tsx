@@ -368,12 +368,13 @@ export default function DashboardHome() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[100px]">NPC</TableHead>
-                      <TableHead>Data/Hora</TableHead>
-                      <TableHead>Autor x Réu</TableHead>
+                      <TableHead>Réu</TableHead>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Hora</TableHead>
                       <TableHead>Categoria</TableHead>
                       <TableHead>Advogado</TableHead>
                       <TableHead>Preposto</TableHead>
-                      <TableHead>Link/Foro</TableHead>
+                      <TableHead>Link</TableHead>
                       <TableHead>Pendências</TableHead>
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
@@ -382,19 +383,22 @@ export default function DashboardHome() {
                     {kpiAudiencias.map((aud) => {
                       const pends = getPendencias(aud);
                       const cat = categorizar(aud);
+                      const online = !isPresencial(aud);
                       return (
                         <TableRow key={aud.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openEdit(aud)}>
                           <TableCell className="text-sm font-mono font-bold text-primary">
                             {aud.npc_dossie || "—"}
                           </TableCell>
+                          <TableCell className="text-sm font-medium max-w-[160px] truncate">
+                            {aud.reu || "—"}
+                          </TableCell>
                           <TableCell className="whitespace-nowrap text-sm">
                             {aud.data_audiencia
                               ? format(new Date(aud.data_audiencia + "T00:00:00"), "dd/MM", { locale: ptBR })
-                              : "—"}{" "}
-                            {aud.hora_audiencia?.slice(0, 5) || ""}
+                              : "—"}
                           </TableCell>
-                          <TableCell className="text-sm font-medium max-w-[180px] truncate">
-                            {aud.autor} x {aud.reu}
+                          <TableCell className="whitespace-nowrap text-sm">
+                            {aud.hora_audiencia?.slice(0, 5) || "—"}
                           </TableCell>
                           <TableCell className="text-xs">
                             <Badge variant="outline" className="text-[10px]">
@@ -416,7 +420,7 @@ export default function DashboardHome() {
                             )}
                           </TableCell>
                           <TableCell className="text-sm">
-                            {!isPresencial(aud) ? (
+                            {online ? (
                               aud.link ? (
                                 <a href={aud.link} target="_blank" rel="noopener noreferrer" className="text-primary flex items-center gap-1 hover:underline" onClick={(e) => e.stopPropagation()}>
                                   <ExternalLink className="h-3 w-3" /> Link
@@ -425,17 +429,13 @@ export default function DashboardHome() {
                                 <span className="text-red-500 flex items-center gap-1"><Link2 className="h-3 w-3" /> Sem link</span>
                               )
                             ) : (
-                              aud.foro ? (
-                                <span className="text-muted-foreground truncate max-w-[120px] block">{aud.foro}</span>
-                              ) : (
-                                <span className="text-red-500 flex items-center gap-1"><MapPin className="h-3 w-3" /> Sem foro</span>
-                              )
+                              <span className="text-muted-foreground text-xs">—</span>
                             )}
                           </TableCell>
                           <TableCell>
                             {pends.length > 0 ? (
                               <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300">
-                                {pends.length} pend.
+                                {pends.join(", ")}
                               </Badge>
                             ) : (
                               <Badge className="text-[10px] bg-green-100 text-green-700 border-green-300">
