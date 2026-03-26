@@ -35,7 +35,25 @@ interface Pessoa {
   equipe?: string | null;
   carteira?: string | null;
   observacao?: string | null;
+  tipo_preposto?: string | null;
+  horario_trabalho?: string | null;
 }
+
+const CLIENTES_PREPOSTO = [
+  "GERAL",
+  "ITAÚ",
+  "ITAÚ - SB/FRAUDE/CONSIGNADO",
+  "ITAÚ JV",
+  "ITAÚ - Fraudes",
+  "ITAÚ - SUPERENDIVIDAMENTO",
+  "PLANOS ECONÔMICOS",
+  "VIVO",
+  "BRADESCO",
+  "MELI/BRADESCO",
+  "Acordos/geral",
+  "Eletrobrás/geral",
+  "ITAÚ - CARTÕES",
+];
 
 const EQUIPES = [
   "ELETROBRÁS",
