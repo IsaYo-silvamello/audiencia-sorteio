@@ -741,7 +741,7 @@ const PessoasList = () => {
               </>
             )}
             {editData.tipo === "advogado" && renderEquipeCheckboxes(editData.equipe, (v) => setEditData({ ...editData, equipe: v }))}
-            {renderCarteiraSelect(editData.carteira, (v) => setEditData({ ...editData, carteira: v }))}
+            {renderCarteiraCheckboxes(editData.carteira, (v) => setEditData({ ...editData, carteira: v }))}
             {renderObservacaoSelect(editData.observacao, (v) => setEditData({ ...editData, observacao: v }))}
           </div>
           <DialogFooter>
