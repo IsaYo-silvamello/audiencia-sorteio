@@ -380,6 +380,7 @@ const ImportacaoSegura = () => {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 };
 
