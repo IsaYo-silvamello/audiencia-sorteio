@@ -470,8 +470,8 @@ export default function DashboardHome() {
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
             <Calendar className="h-10 w-10 mx-auto mb-3 opacity-40" />
-            <p className="font-medium">Nenhuma audiência nesta semana</p>
-            <p className="text-sm mt-1">Importe os relatórios Seven e eLaw na aba Importação</p>
+            <p className="font-medium">Sua pauta desta semana ainda não foi carregada</p>
+            <p className="text-sm mt-1">Importe os relatórios Seven e eLaw na aba Importar Pauta</p>
           </CardContent>
         </Card>
       )}
