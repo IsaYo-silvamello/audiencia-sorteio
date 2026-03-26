@@ -14,7 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Shuffle, AlertCircle, CheckCircle2, XCircle, MapPin, ChevronDown, ChevronUp, CalendarCheck, Calendar } from "lucide-react";
+import { Shuffle, AlertCircle, TriangleAlert, CheckCircle2, XCircle, MapPin, ChevronDown, ChevronUp, CalendarCheck, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
