@@ -50,9 +50,9 @@ const CLIENTES_PREPOSTO = [
   "PLANOS ECONÔMICOS",
   "VIVO",
   "BRADESCO",
-  "MELI/BRADESCO",
-  "Acordos/geral",
-  "Eletrobrás/geral",
+  "MELI",
+  "Acordos",
+  "Eletrobrás",
   "ITAÚ - CARTÕES",
 ];
 
