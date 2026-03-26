@@ -506,27 +506,43 @@ const ImportacaoSegura = () => {
               <p className="py-4 text-center text-sm text-muted-foreground">Nenhuma importação registrada.</p>
             ) : (
               <div className="space-y-3">
-                {historico.map((h) => (
-                  <div key={h.id} className="flex items-start gap-3 rounded-lg border bg-card p-3">
-                    <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{h.arquivos}</p>
-                      <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-                        <span>
-                          {format(new Date(h.data_importacao), "dd/MM/yyyy 'às' HH:mm", {
-                            locale: ptBR,
-                          })}
-                        </span>
-                        <span>•</span>
-                        <span>{h.inseridos} inseridas</span>
-                        <span>•</span>
-                        <span>{h.atualizados} atualizadas</span>
-                        <span>•</span>
-                        <span>{h.total_registros} total</span>
+                {historico.map((h) => {
+                  const inconsistencias = h.total_registros - h.inseridos - h.atualizados;
+                  const hasIssues = inconsistencias > 0;
+
+                  return (
+                    <div key={h.id} className="flex items-start gap-3 rounded-lg border bg-card p-3">
+                      <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${hasIssues ? 'bg-amber-100' : 'bg-green-100'}`}>
+                        {hasIssues
+                          ? <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                          : <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                        }
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-medium">{h.arquivos}</p>
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${hasIssues ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+                            {hasIssues ? 'Inconsistência' : 'Sucesso'}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {format(new Date(h.data_importacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                        </p>
+                        <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <PlusCircle className="h-3 w-3" /> {h.inseridos} importadas
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <RefreshCw className="h-3 w-3" /> {h.atualizados} atualizadas
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <FileText className="h-3 w-3" /> {h.total_registros} total
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
