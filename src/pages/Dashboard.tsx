@@ -16,12 +16,12 @@ import smaartLogo from "@/assets/smaart-logo.png";
 
 const MENU_ITEMS = [
   { key: "home", label: "Home", icon: LayoutGrid },
-  { key: "importacao", label: "Importação", icon: Upload },
-  { key: "sorteio", label: "Sorteio", icon: Shuffle },
+  { key: "importacao", label: "Importar Pauta", icon: Upload },
+  { key: "sorteio", label: "Distribuição", icon: Shuffle },
   { key: "audiencias", label: "Audiências", icon: Scale },
   { key: "calendario", label: "Calendário", icon: Calendar },
-  { key: "equipe", label: "Equipe", icon: Users },
-  { key: "admin", label: "Admin", icon: Settings },
+  { key: "equipe", label: "Colaboradores", icon: Users },
+  { key: "admin", label: "Administrador", icon: Settings },
 ];
 
 const Dashboard = () => {
