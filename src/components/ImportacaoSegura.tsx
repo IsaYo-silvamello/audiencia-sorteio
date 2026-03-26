@@ -218,20 +218,12 @@ const ImportacaoSegura = () => {
           if (!record.autor || record.autor === "") record.autor = "Desconhecido";
           if (!record.reu || record.reu === "") record.reu = "Desconhecido";
 
-          // Deduplication scoped: match by numero_processo AND same week
-          if (record.numero_processo) {
-            let query = supabase
+          // Deduplication by NPC (unique per audiência)
+          if (record.npc_dossie) {
+            const { data: existing } = await supabase
               .from("audiencias")
-              .select("id, data_audiencia")
-              .eq("numero_processo", record.numero_processo);
-
-            // Scope to the same week if the record has a date
-            const weekRange = record.data_audiencia ? getWeekRange(record.data_audiencia) : null;
-            if (weekRange) {
-              query = query.gte("data_audiencia", weekRange.start).lte("data_audiencia", weekRange.end);
-            }
-
-            const { data: existing } = await query;
+              .select("id")
+              .eq("npc_dossie", record.npc_dossie);
 
             if (existing && existing.length > 0) {
               const { error } = await supabase
