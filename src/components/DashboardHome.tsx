@@ -5,10 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Calendar, Clock, Users, ChevronLeft, ChevronRight, ChevronDown,
   Monitor, Video, Gavel, ShieldAlert, Link2, Building2, MapPin,
-  CheckCircle2, AlertTriangle, Lock
+  CheckCircle2, AlertTriangle, Lock, X
 } from "lucide-react";
 import { startOfWeek, endOfWeek, addWeeks, format, isSameWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -71,21 +73,24 @@ function categorizar(aud: Audiencia): Categoria {
   return "outros";
 }
 
+type KpiFilter = "total" | "atribuidas" | "pendentes" | null;
+
 export default function DashboardHome() {
   const [semanaAtual, setSemanaAtual] = useState(() => startOfWeek(new Date(), { weekStartsOn: 0 }));
   const [audiencias, setAudiencias] = useState<Audiencia[]>([]);
   const [pauta, setPauta] = useState<PautaSemanal | null>(null);
   const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
   const [finalizando, setFinalizando] = useState(false);
+  const [kpiModal, setKpiModal] = useState<KpiFilter>(null);
 
   const inicio = useMemo(() => semanaAtual, [semanaAtual]);
   const fim = useMemo(() => endOfWeek(semanaAtual, { weekStartsOn: 0 }), [semanaAtual]);
 
   const semanaLabel = useMemo(() => {
     const seg = new Date(inicio);
-    seg.setDate(seg.getDate() + 1); // segunda
+    seg.setDate(seg.getDate() + 1);
     const sex = new Date(fim);
-    sex.setDate(sex.getDate() - 1); // sexta
+    sex.setDate(sex.getDate() - 1);
     return `${format(seg, "dd/MM", { locale: ptBR })} à ${format(sex, "dd/MM/yyyy", { locale: ptBR })}`;
   }, [inicio, fim]);
 
@@ -122,7 +127,6 @@ export default function DashboardHome() {
     return () => { supabase.removeChannel(channel); };
   }, [fetchData]);
 
-  // Categorize
   const porCategoria = useMemo(() => {
     const map: Record<Categoria, Audiencia[]> = {
       concil_online: [], concil_presencial: [], aij_presencial: [], aij_online: [], super_endividamento: [], outros: [],
@@ -131,7 +135,6 @@ export default function DashboardHome() {
     return map;
   }, [audiencias]);
 
-  // Alerts
   const alertas = useMemo(() => {
     const result: { label: string; count: number; icon: any }[] = [];
     const semAdvPrep = audiencias.filter((a) => !a.advogado && !a.preposto).length;
@@ -184,20 +187,39 @@ export default function DashboardHome() {
 
   const toggleCard = (key: string) => setOpenCards((prev) => ({ ...prev, [key]: !prev[key] }));
 
+  // Filtered list for KPI modal
+  const kpiAudiencias = useMemo(() => {
+    if (kpiModal === "total") return audiencias;
+    if (kpiModal === "atribuidas") return audiencias.filter((a) => a.advogado || a.preposto);
+    if (kpiModal === "pendentes") return audiencias.filter((a) => !a.advogado && !a.preposto);
+    return [];
+  }, [kpiModal, audiencias]);
+
+  const kpiTitle = kpiModal === "total" ? "Todas as Audiências" : kpiModal === "atribuidas" ? "Audiências Atribuídas" : "Audiências Pendentes";
+
   return (
     <div className="space-y-6">
       {/* Header + Week Selector */}
       <div className="flex flex-col gap-4">
-        <h1 className="text-2xl font-bold tracking-tight">Central de Operações</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Pauta de Audiências</h1>
 
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => setSemanaAtual((s) => addWeeks(s, -1))}>
-              <ChevronLeft className="h-4 w-4" />
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => setSemanaAtual((s) => addWeeks(s, -1))}>
+              <ChevronLeft className="h-5 w-5" />
             </Button>
-            <div className="text-center min-w-[220px]">
-              <p className="text-lg font-semibold">{semanaLabel}</p>
-              <div className="flex items-center justify-center gap-2 mt-0.5">
+
+            <div
+              className={`text-center px-6 py-3 rounded-xl border-2 transition-all ${
+                isCurrentWeek
+                  ? "border-primary bg-primary/5 shadow-md shadow-primary/10"
+                  : "border-border bg-card"
+              }`}
+            >
+              <p className={`text-xl font-bold ${isCurrentWeek ? "text-primary" : "text-foreground"}`}>
+                {semanaLabel}
+              </p>
+              <div className="flex items-center justify-center gap-2 mt-1">
                 {pautaConcluida ? (
                   <Badge className="bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-200">
                     <CheckCircle2 className="h-3 w-3 mr-1" /> Concluída
@@ -207,11 +229,12 @@ export default function DashboardHome() {
                     <Clock className="h-3 w-3 mr-1" /> Em montagem
                   </Badge>
                 )}
-                {isCurrentWeek && <Badge variant="secondary" className="text-xs">Semana atual</Badge>}
+                {isCurrentWeek && <Badge className="bg-primary/10 text-primary border-primary/30 text-xs">Semana atual</Badge>}
               </div>
             </div>
-            <Button variant="outline" size="icon" onClick={() => setSemanaAtual((s) => addWeeks(s, 1))}>
-              <ChevronRight className="h-4 w-4" />
+
+            <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => setSemanaAtual((s) => addWeeks(s, 1))}>
+              <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
 
@@ -249,24 +272,90 @@ export default function DashboardHome() {
         </div>
       )}
 
-      {/* KPIs */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: "Total", value: totalPeriodo, icon: Calendar, color: "text-primary" },
-          { label: "Atribuídas", value: atribuidasPeriodo, icon: CheckCircle2, color: "text-green-600" },
-          { label: "Pendentes", value: pendentesPeriodo, icon: AlertTriangle, color: pendentesPeriodo > 0 ? "text-amber-600" : "text-green-600" },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <Card key={label}>
-            <CardContent className="p-4 flex items-center gap-3">
-              <Icon className={`h-5 w-5 ${color} shrink-0`} />
+      {/* KPI Cards - clickable */}
+      <div className="grid grid-cols-3 gap-4">
+        {([
+          { key: "total" as KpiFilter, label: "Total", value: totalPeriodo, icon: Calendar, color: "text-primary", bgIcon: "bg-blue-50 dark:bg-blue-950/50" },
+          { key: "atribuidas" as KpiFilter, label: "Atribuídas", value: atribuidasPeriodo, icon: CheckCircle2, color: "text-green-600", bgIcon: "bg-green-50 dark:bg-green-950/50" },
+          { key: "pendentes" as KpiFilter, label: "Pendentes", value: pendentesPeriodo, icon: AlertTriangle, color: pendentesPeriodo > 0 ? "text-amber-600" : "text-green-600", bgIcon: pendentesPeriodo > 0 ? "bg-amber-50 dark:bg-amber-950/50" : "bg-green-50 dark:bg-green-950/50" },
+        ]).map(({ key, label, value, icon: Icon, color, bgIcon }) => (
+          <Card
+            key={key}
+            className="cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-primary/30"
+            onClick={() => setKpiModal(key)}
+          >
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className={`h-12 w-12 rounded-xl ${bgIcon} flex items-center justify-center shrink-0`}>
+                <Icon className={`h-6 w-6 ${color}`} />
+              </div>
               <div>
-                <p className="text-xs text-muted-foreground">{label}</p>
-                <p className={`text-2xl font-bold ${color}`}>{value}</p>
+                <p className="text-sm text-muted-foreground">{label}</p>
+                <p className={`text-3xl font-bold ${color}`}>{value}</p>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {/* KPI Detail Modal */}
+      <Dialog open={kpiModal !== null} onOpenChange={(open) => !open && setKpiModal(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>{kpiTitle} — {semanaLabel}</DialogTitle>
+          </DialogHeader>
+          {kpiAudiencias.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">Nenhuma audiência encontrada.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data/Hora</TableHead>
+                  <TableHead>Autor x Réu</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Advogado</TableHead>
+                  <TableHead>Preposto</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {kpiAudiencias.map((aud) => (
+                  <TableRow key={aud.id}>
+                    <TableCell className="whitespace-nowrap text-sm">
+                      {aud.data_audiencia
+                        ? format(new Date(aud.data_audiencia + "T00:00:00"), "dd/MM", { locale: ptBR })
+                        : "—"}{" "}
+                      {aud.hora_audiencia?.slice(0, 5) || ""}
+                    </TableCell>
+                    <TableCell className="text-sm font-medium max-w-[200px] truncate">
+                      {aud.autor} x {aud.reu}
+                    </TableCell>
+                    <TableCell className="text-sm">{aud.tipo_audiencia || "—"}</TableCell>
+                    <TableCell className="text-sm">
+                      {aud.advogado ? (
+                        <span className="text-blue-700 dark:text-blue-300">{aud.advogado}</span>
+                      ) : (
+                        <span className="text-amber-600">⚠ Pendente</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {aud.preposto ? (
+                        <span className="text-emerald-700 dark:text-emerald-300">{aud.preposto}</span>
+                      ) : (
+                        <span className="text-amber-600">⚠ Pendente</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={!aud.advogado && !aud.preposto ? "outline" : "default"} className="text-xs">
+                        {aud.advogado || aud.preposto ? "Atribuída" : "Pendente"}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Category Cards */}
       {totalPeriodo > 0 ? (
