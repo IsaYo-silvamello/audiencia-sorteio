@@ -58,11 +58,9 @@ const CLIENTES_PREPOSTO = [
 
 const EQUIPES = [
   "ELETROBRÁS",
-  "ELETROBRÁS/GERAL",
   "ITAÚ",
   "GERAL",
   "MELI",
-  "BRADESCO/MELI",
   "BRADESCO",
   "VIVO",
 ];
@@ -308,19 +306,29 @@ const PessoasList = () => {
   const advogados = pessoas.filter((p) => p.tipo === "advogado");
   const prepostos = pessoas.filter((p) => p.tipo === "preposto");
 
-  const renderEquipeSelect = (value: string, onChange: (v: string) => void) => (
+  const renderEquipeCheckboxes = (value: string, onChange: (v: string) => void) => (
     <div className="space-y-2">
       <Label>Equipe (Cliente)</Label>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger>
-          <SelectValue placeholder="Selecione o cliente" />
-        </SelectTrigger>
-        <SelectContent>
-          {EQUIPES.map((eq) => (
-            <SelectItem key={eq} value={eq}>{eq}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
+        {EQUIPES.map((eq) => {
+          const selected = value ? value.split(", ") : [];
+          const isChecked = selected.includes(eq);
+          return (
+            <label key={eq} className="flex items-center gap-2 text-sm cursor-pointer">
+              <Checkbox
+                checked={isChecked}
+                onCheckedChange={(checked) => {
+                  const newSelected = checked
+                    ? [...selected, eq]
+                    : selected.filter((s) => s !== eq);
+                  onChange(newSelected.join(", "));
+                }}
+              />
+              {eq}
+            </label>
+          );
+        })}
+      </div>
     </div>
   );
 
@@ -557,7 +565,7 @@ const PessoasList = () => {
 
               {formData.tipo === "advogado" && (
                 <>
-                  {renderEquipeSelect(formData.equipe, (v) => setFormData({ ...formData, equipe: v }))}
+                  {renderEquipeCheckboxes(formData.equipe, (v) => setFormData({ ...formData, equipe: v }))}
                 </>
               )}
               {renderCarteiraSelect(formData.carteira, (v) => setFormData({ ...formData, carteira: v }))}
@@ -720,7 +728,7 @@ const PessoasList = () => {
                 </div>
               </>
             )}
-            {editData.tipo === "advogado" && renderEquipeSelect(editData.equipe, (v) => setEditData({ ...editData, equipe: v }))}
+            {editData.tipo === "advogado" && renderEquipeCheckboxes(editData.equipe, (v) => setEditData({ ...editData, equipe: v }))}
             {renderCarteiraSelect(editData.carteira, (v) => setEditData({ ...editData, carteira: v }))}
             {renderObservacaoSelect(editData.observacao, (v) => setEditData({ ...editData, observacao: v }))}
           </div>
