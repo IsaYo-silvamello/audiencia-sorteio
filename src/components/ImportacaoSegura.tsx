@@ -402,7 +402,7 @@ const ImportacaoSegura = () => {
                 <FileSpreadsheet className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle>Importação de Planilha</CardTitle>
+                <CardTitle>Importe sua pauta de audiências</CardTitle>
                 <CardDescription>
                   Importe audiências a partir de arquivo .xlsx ou .xls nos layouts exp/eLaw e pauta
                 </CardDescription>
