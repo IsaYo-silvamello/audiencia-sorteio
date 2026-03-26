@@ -102,6 +102,8 @@ const PessoasList = () => {
     equipe: "",
     carteira: "",
     observacao: "",
+    tipo_preposto: "",
+    horario_trabalho: "",
   });
   const [editPessoa, setEditPessoa] = useState<Pessoa | null>(null);
   const [editData, setEditData] = useState({
@@ -114,6 +116,8 @@ const PessoasList = () => {
     equipe: "",
     carteira: "",
     observacao: "",
+    tipo_preposto: "",
+    horario_trabalho: "",
   });
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
