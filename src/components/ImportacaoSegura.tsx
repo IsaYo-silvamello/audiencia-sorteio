@@ -186,9 +186,12 @@ const ImportacaoSegura = () => {
         const buffer = await file.arrayBuffer();
         const wb = XLSX.read(buffer, { type: "array" });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+         const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+         const allRowsCount = rows.length;
 
         if (rows.length === 0) continue;
+
+        setImportStatus(`Processando ${file.name} (${allRowsCount} registros)...`);
 
         const headers = Object.keys(rows[0]);
         const mapped = headers.reduce<Record<string, string>>((acc, h) => {
