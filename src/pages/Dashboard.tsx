@@ -39,7 +39,9 @@ const Dashboard = () => {
       >
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border">
-          <img src={smaartArrow} alt="Smaart" className="h-9 w-9 shrink-0 object-contain" />
+          <div className="h-9 w-9 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
+            <Scale className="h-5 w-5 text-sidebar-primary-foreground" />
+          </div>
           {!collapsed && (
             <div className="overflow-hidden">
               <h1 className="text-sm font-bold text-sidebar-foreground leading-tight">Smaart Aud</h1>
