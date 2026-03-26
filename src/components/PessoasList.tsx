@@ -58,11 +58,9 @@ const CLIENTES_PREPOSTO = [
 
 const EQUIPES = [
   "ELETROBRÁS",
-  "ELETROBRÁS/GERAL",
   "ITAÚ",
   "GERAL",
   "MELI",
-  "BRADESCO/MELI",
   "BRADESCO",
   "VIVO",
 ];
