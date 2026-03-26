@@ -85,6 +85,7 @@ const CARTEIRAS = [
   
   "BRADESCO",
   "VIVO",
+  "ACORDOS",
 ];
 
 const OBSERVACOES = ["Faz SE", "Não faz SE"];
