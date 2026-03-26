@@ -369,6 +369,12 @@ const PessoasList = () => {
             {pessoa.tipo_advogado && (
               <span className="capitalize">{pessoa.tipo_advogado}</span>
             )}
+            {pessoa.tipo_preposto && (
+              <span className="capitalize">Tipo: {pessoa.tipo_preposto === "estagiario" ? "Estagiário" : "Assistente"}</span>
+            )}
+            {pessoa.tipo_preposto === "estagiario" && pessoa.horario_trabalho && (
+              <span>Horário: {pessoa.horario_trabalho}</span>
+            )}
             {pessoa.tipo_advogado === "externo" && pessoa.estado && (
               <span>Estado: {pessoa.estado}</span>
             )}
