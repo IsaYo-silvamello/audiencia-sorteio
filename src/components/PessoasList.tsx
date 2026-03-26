@@ -498,7 +498,49 @@ const PessoasList = () => {
                 </>
               )}
 
-              {renderEquipeSelect(formData.equipe, (v) => setFormData({ ...formData, equipe: v }))}
+              {formData.tipo === "preposto" && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Tipo de Preposto</Label>
+                    <Select value={formData.tipo_preposto} onValueChange={(v) => setFormData({ ...formData, tipo_preposto: v })}>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="estagiario">Estagiário</SelectItem>
+                        <SelectItem value="assistente">Assistente</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {formData.tipo_preposto === "estagiario" && (
+                    <div className="space-y-2">
+                      <Label>Horário de Trabalho</Label>
+                      <Input
+                        placeholder="Ex: 09:00 - 15:00"
+                        value={formData.horario_trabalho}
+                        onChange={(e) => setFormData({ ...formData, horario_trabalho: e.target.value })}
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label>Cliente</Label>
+                    <Select value={formData.equipe} onValueChange={(v) => setFormData({ ...formData, equipe: v })}>
+                      <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
+                      <SelectContent>
+                        {CLIENTES_PREPOSTO.map((c) => (
+                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+
+              {formData.tipo === "advogado" && (
+                <>
+                  {renderEquipeSelect(formData.equipe, (v) => setFormData({ ...formData, equipe: v }))}
+                </>
+              )}
               {renderCarteiraSelect(formData.carteira, (v) => setFormData({ ...formData, carteira: v }))}
               {renderObservacaoSelect(formData.observacao, (v) => setFormData({ ...formData, observacao: v }))}
 
