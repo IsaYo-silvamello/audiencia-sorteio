@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   Calendar, Clock, Users, ChevronLeft, ChevronRight, ChevronDown,
   Monitor, Video, Gavel, ShieldAlert, Link2, Building2, MapPin,
-  CheckCircle2, AlertTriangle, Lock, X
+  CheckCircle2, AlertTriangle, Lock
 } from "lucide-react";
 import { startOfWeek, endOfWeek, addWeeks, format, isSameWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
