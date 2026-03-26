@@ -140,6 +140,33 @@ export type Database = {
         }
         Relationships: []
       }
+      historico_importacoes: {
+        Row: {
+          arquivos: string
+          atualizados: number
+          data_importacao: string
+          id: string
+          inseridos: number
+          total_registros: number
+        }
+        Insert: {
+          arquivos?: string
+          atualizados?: number
+          data_importacao?: string
+          id?: string
+          inseridos?: number
+          total_registros?: number
+        }
+        Update: {
+          arquivos?: string
+          atualizados?: number
+          data_importacao?: string
+          id?: string
+          inseridos?: number
+          total_registros?: number
+        }
+        Relationships: []
+      }
       historico_sorteios: {
         Row: {
           atribuidas: number
