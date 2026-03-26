@@ -273,10 +273,18 @@ const PessoasList = () => {
           updateData.estado = null;
           updateData.valor_audiencia = null;
         }
+        updateData.tipo_preposto = null;
+        updateData.horario_trabalho = null;
       } else {
         updateData.tipo_advogado = null;
         updateData.estado = null;
         updateData.valor_audiencia = null;
+        updateData.tipo_preposto = editData.tipo_preposto || null;
+        if (editData.tipo_preposto === "estagiario") {
+          updateData.horario_trabalho = editData.horario_trabalho || null;
+        } else {
+          updateData.horario_trabalho = null;
+        }
       }
 
       const { error } = await supabase
