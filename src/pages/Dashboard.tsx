@@ -71,9 +71,9 @@ const Dashboard = () => {
 
         {/* Footer logos */}
         {!collapsed && (
-          <div className="flex items-center justify-center gap-4 px-3 py-3 border-t border-sidebar-border">
-            <img src={smaartTec} alt="Smaart Tec" className="h-6 object-contain" />
-            <img src={smLab} alt="SM Lab" className="h-7 object-contain" />
+          <div className="flex flex-col items-center gap-3 px-4 py-4 border-t border-sidebar-border">
+            <img src={smaartTec} alt="Smaart Tec" className="h-5 object-contain" />
+            <img src={smLab} alt="SM Lab" className="h-8 object-contain" />
           </div>
         )}
 
