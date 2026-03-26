@@ -1,72 +1,38 @@
 
 
-## Plano: Redesign do Dashboard — Pautas Semanais + Design Acordos Silva Mello
+## Plano: Ajustar tabela de KPIs e categorias de audiência
 
-### O que muda
+### Mudanças
 
-**1. Remover stepper (#1 #2 #3)** e substituir por um **seletor de pauta semanal**.
+**1. Atualizar categorias de audiência** (função `categorizar` e tipos)
 
-**2. Seletor de Pauta Semanal**
-- Dropdown ou lista de semanas disponíveis (baseado nas datas de audiências existentes no banco)
-- Formato: "23/03 à 27/03/2026"
-- Semana atual pré-selecionada
-- Setas para navegar entre semanas (anterior/próxima)
-- Status da semana: "Em montagem" ou "Concluída"
-- Botão "Finalizar Pauta" que:
-  - Verifica pendências (sem advogado, sem link, sem foro, etc.)
-  - Se houver pendências, mostra alerta impedindo finalização
-  - Se não houver, marca a semana como concluída
+Substituir o tipo `Categoria` atual por categorias mais granulares:
+- Conciliatória Online / Conciliatória Presencial
+- AIJ Online / AIJ Presencial
+- SE Online / SE Presencial
+- ACIJ Online / ACIJ Presencial
+- Outros (mantido como fallback)
 
-**3. Visão macro da pauta selecionada**
-- KPIs da semana (total, atribuídas, pendentes)
-- Caixas organizadoras por tipo (mantidas: Conciliatória Online/Presencial, AIJ Online/Presencial, Super Endividamento)
-- Alertas de pendências da semana selecionada
+A função `categorizar()` será atualizada para detectar "endividamento" → SE, "ACIJ" → ACIJ, separando online/presencial em cada caso.
 
-**4. Alinhamento visual com Acordos Silva Mello**
-- Importar fonte **Inter** via Google Fonts
-- Atualizar `index.css` com as cores do projeto Acordos:
-  - Background: `39 48% 93%` (tom creme/quente)
-  - Primary: `217 91% 60%` (azul vibrante)
-  - Sidebar: `213 66% 15%` (azul escuro #0D2740)
-  - Adicionar variáveis `--sidebar-*` do Acordos
-  - Adicionar variáveis de status e brand
-- Atualizar `tailwind.config.ts` com tokens de sidebar, brand, status e font-family Inter
+**2. Reorganizar colunas da tabela expandida dos KPIs**
 
-### Estrutura visual
+Nova ordem: NPC / Réu / Data / Hora / Categoria / Advogado / Preposto / Link (só online) / Pendências
 
-```text
-┌──────────────────────────────────────────────────┐
-│  Central de Operações                            │
-│                                                  │
-│  ◄  23/03 à 27/03/2026  ►   [Finalizar Pauta]  │
-│     Status: Em montagem                          │
-├──────────────────────────────────────────────────┤
-│  ⚠ 5 aud. sem advogado  ⚠ 3 online sem link    │
-├──────────────────────────────────────────────────┤
-│  Total: 32  │ Pendentes: 5 │ Atribuídas: 27     │
-├──────────┬──────────┬──────────┬────────┬────────┤
-│ Concil.  │ Concil.  │   AIJ    │  AIJ   │ Super  │
-│ Online   │Presencial│Presencial│ Online │Endivid.│
-│  (14)    │   (3)    │   (5)    │  (8)   │  (2)   │
-└──────────┴──────────┴──────────┴────────┴────────┘
-```
+- Separar Data e Hora em colunas distintas
+- Remover "Autor x Réu" e mostrar apenas **Réu**
+- Coluna **Link** mostra o link clicável para online, ou "—" para presencial
+- Remover coluna Link/Foro combinada; foro fica apenas nas pendências
+
+**3. Adicionar alerta de audiências online sem link**
+
+Já existe no código atual (linha 151-152). Confirmar que está funcionando — o alerta `audiências online sem link` já é gerado. Nenhuma mudança necessária aqui.
+
+### Arquivo alterado
+- `src/components/DashboardHome.tsx`
 
 ### Detalhes técnicos
-
-**Banco de dados**: Criar tabela `pautas_semanais` para rastrear status de cada semana:
-```sql
-create table pautas_semanais (
-  id uuid primary key default gen_random_uuid(),
-  semana_inicio date not null unique,
-  semana_fim date not null,
-  status text not null default 'em_montagem', -- 'em_montagem' | 'concluida'
-  finalizada_em timestamptz,
-  created_at timestamptz default now()
-);
-```
-
-**Arquivos alterados**:
-- `src/components/DashboardHome.tsx` — reescrita: seletor semanal, botão finalizar, validação de pendências
-- `src/index.css` — cores e fonte Inter do projeto Acordos Silva Mello
-- `tailwind.config.ts` — tokens de sidebar, brand, status, font Inter
+- Novo tipo: `"concil_online" | "concil_presencial" | "aij_online" | "aij_presencial" | "se_online" | "se_presencial" | "acij_online" | "acij_presencial" | "outros"`
+- Regex para ACIJ: `tipo.includes("acij")` ou `tipo.includes("audiência complementar")`
+- Regex para SE: `tipo.includes("endividamento") || tipo.includes(" se ")`
 
