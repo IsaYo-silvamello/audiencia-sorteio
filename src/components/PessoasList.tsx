@@ -246,6 +246,8 @@ const PessoasList = () => {
       equipe: pessoa.equipe || "",
       carteira: pessoa.carteira || "",
       observacao: pessoa.observacao || "",
+      tipo_preposto: pessoa.tipo_preposto || "",
+      horario_trabalho: pessoa.horario_trabalho || "",
     });
   };
 
