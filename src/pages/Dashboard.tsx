@@ -67,6 +67,14 @@ const Dashboard = () => {
           ))}
         </nav>
 
+        {/* Footer logos */}
+        {!collapsed && (
+          <div className="flex items-center justify-center gap-4 px-3 py-3 border-t border-sidebar-border">
+            <img src={smaartTec} alt="Smaart Tec" className="h-6 object-contain" />
+            <img src={smLab} alt="SM Lab" className="h-7 object-contain" />
+          </div>
+        )}
+
         {/* Collapse toggle */}
         <button
           onClick={() => setCollapsed((c) => !c)}
