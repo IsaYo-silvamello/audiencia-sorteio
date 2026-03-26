@@ -285,6 +285,18 @@ const ImportacaoSegura = () => {
   };
 
   return (
+    <>
+      {importing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4 p-8 rounded-xl bg-card border shadow-lg max-w-sm w-full mx-4">
+            <Loader2 className="h-12 w-12 text-primary animate-spin" />
+            <p className="text-lg font-semibold text-foreground">Importando...</p>
+            <p className="text-sm text-muted-foreground text-center">{importStatus}</p>
+            <Progress value={importProgress} className="w-full" />
+            <p className="text-xs text-muted-foreground">Não feche ou clique em nada até finalizar.</p>
+          </div>
+        </div>
+      )}
     <div className="space-y-6">
       <Card>
         <CardHeader>
