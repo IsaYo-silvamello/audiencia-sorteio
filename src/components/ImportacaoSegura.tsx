@@ -206,7 +206,10 @@ const ImportacaoSegura = () => {
           return k === "HORA DO COMPROMISSO" || k === "HORA DO PRAZO";
         });
 
+        let rowIndex = 0;
         for (const row of rows) {
+          rowIndex++;
+          setImportProgress(Math.round((rowIndex / allRowsCount) * 100));
           const record: Record<string, any> = { status: "pendente" };
 
           for (const [excelCol, dbCol] of Object.entries(mapped)) {
