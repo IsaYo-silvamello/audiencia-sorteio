@@ -172,6 +172,8 @@ const ImportacaoSegura = () => {
 
     setImporting(true);
     setResult(null);
+    setImportProgress(0);
+    setImportStatus("Lendo planilhas...");
 
     let totalRows = 0;
     let totalInserted = 0;
