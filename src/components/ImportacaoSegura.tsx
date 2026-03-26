@@ -169,6 +169,7 @@ interface HistoricoImportacao {
 }
 
 const ImportacaoSegura = () => {
+  const navigate = useNavigate();
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
   const [importStatus, setImportStatus] = useState("");
