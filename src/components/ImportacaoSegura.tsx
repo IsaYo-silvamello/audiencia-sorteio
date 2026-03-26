@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Upload, FileSpreadsheet, CheckCircle2, History, Clock } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, History, Clock, ArrowRight, AlertTriangle, FileText, RefreshCw, PlusCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -168,6 +169,7 @@ interface HistoricoImportacao {
 }
 
 const ImportacaoSegura = () => {
+  const navigate = useNavigate();
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
   const [importStatus, setImportStatus] = useState("");
@@ -364,8 +366,8 @@ const ImportacaoSegura = () => {
       await fetchHistorico();
 
       toast({
-        title: "Importação concluída",
-        description: `${totalInserted} inseridas, ${totalUpdated} atualizadas de ${totalRows} registros (${files.length} arquivo${files.length > 1 ? "s" : ""})`,
+        title: "✅ Importação concluída",
+        description: `${totalRows} registros processados com sucesso.`,
       });
     } catch (err: any) {
       console.error("Erro na importação:", err);
@@ -422,11 +424,65 @@ const ImportacaoSegura = () => {
             </Button>
 
             {result && (
-              <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                <p className="text-sm text-green-800">
-                  {result.inserted} inseridas, {result.updated} atualizadas de {result.total} registros.
-                </p>
+              <div className="rounded-xl border border-green-200 bg-green-50 p-5 space-y-4">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <h3 className="text-base font-semibold text-green-800">Importação concluída com sucesso</h3>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="flex items-center gap-2 rounded-lg bg-white/80 border border-green-100 p-3">
+                    <PlusCircle className="h-4 w-4 text-green-600 shrink-0" />
+                    <div>
+                      <p className="text-lg font-bold text-green-800">{result.inserted}</p>
+                      <p className="text-xs text-green-600">Importadas</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-lg bg-white/80 border border-green-100 p-3">
+                    <RefreshCw className="h-4 w-4 text-green-600 shrink-0" />
+                    <div>
+                      <p className="text-lg font-bold text-green-800">{result.updated}</p>
+                      <p className="text-xs text-green-600">Atualizadas</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-lg bg-white/80 border border-green-100 p-3">
+                    <FileText className="h-4 w-4 text-green-600 shrink-0" />
+                    <div>
+                      <p className="text-lg font-bold text-green-800">{result.total}</p>
+                      <p className="text-xs text-green-600">Processados</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 rounded-lg bg-white/80 border border-green-100 p-2.5 px-3">
+                  <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                  <p className="text-xs text-muted-foreground">
+                    {result.total - result.inserted - result.updated === 0
+                      ? "Nenhuma inconsistência encontrada."
+                      : `${result.total - result.inserted - result.updated} registro(s) com inconsistência.`}
+                  </p>
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => navigate("/?tab=audiencias")}
+                  >
+                    <ArrowRight className="mr-1.5 h-4 w-4" />
+                    Ir para Audiências
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => navigate("/?tab=audiencias&status=pendente")}
+                  >
+                    <AlertTriangle className="mr-1.5 h-4 w-4" />
+                    Revisar Pendentes
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
@@ -450,27 +506,43 @@ const ImportacaoSegura = () => {
               <p className="py-4 text-center text-sm text-muted-foreground">Nenhuma importação registrada.</p>
             ) : (
               <div className="space-y-3">
-                {historico.map((h) => (
-                  <div key={h.id} className="flex items-start gap-3 rounded-lg border bg-card p-3">
-                    <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{h.arquivos}</p>
-                      <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-                        <span>
-                          {format(new Date(h.data_importacao), "dd/MM/yyyy 'às' HH:mm", {
-                            locale: ptBR,
-                          })}
-                        </span>
-                        <span>•</span>
-                        <span>{h.inseridos} inseridas</span>
-                        <span>•</span>
-                        <span>{h.atualizados} atualizadas</span>
-                        <span>•</span>
-                        <span>{h.total_registros} total</span>
+                {historico.map((h) => {
+                  const inconsistencias = h.total_registros - h.inseridos - h.atualizados;
+                  const hasIssues = inconsistencias > 0;
+
+                  return (
+                    <div key={h.id} className="flex items-start gap-3 rounded-lg border bg-card p-3">
+                      <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${hasIssues ? 'bg-amber-100' : 'bg-green-100'}`}>
+                        {hasIssues
+                          ? <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                          : <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                        }
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-medium">{h.arquivos}</p>
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${hasIssues ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+                            {hasIssues ? 'Inconsistência' : 'Sucesso'}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {format(new Date(h.data_importacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                        </p>
+                        <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <PlusCircle className="h-3 w-3" /> {h.inseridos} importadas
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <RefreshCw className="h-3 w-3" /> {h.atualizados} atualizadas
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <FileText className="h-3 w-3" /> {h.total_registros} total
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
