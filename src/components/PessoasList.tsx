@@ -41,19 +41,19 @@ interface Pessoa {
 }
 
 const CLIENTES_PREPOSTO = [
+  "Acordos",
+  "BRADESCO",
+  "Eletrobrás",
   "GERAL",
   "ITAÚ",
-  "ITAÚ - SB/FRAUDE/CONSIGNADO",
-  "ITAÚ JV",
+  "ITAÚ - CARTÕES",
   "ITAÚ - Fraudes",
+  "ITAÚ - SB/FRAUDE/CONSIGNADO",
   "ITAÚ - SUPERENDIVIDAMENTO",
+  "ITAÚ JV",
+  "MELI",
   "PLANOS ECONÔMICOS",
   "VIVO",
-  "BRADESCO",
-  "MELI",
-  "Acordos",
-  "Eletrobrás",
-  "ITAÚ - CARTÕES",
 ];
 
 const EQUIPES = [
@@ -66,26 +66,25 @@ const EQUIPES = [
 ];
 
 const CARTEIRAS = [
+  "ACORDOS",
+  "BRADESCO",
+  "CARTÕES",
+  "CONSIGNADO",
+  "DCRPF",
+  "ELETROBRÁS",
+  "FRAUDES E ILÍCITOS",
   "GERAL",
   "GOLPES",
-  "TRIBUNAIS SUPERIORES",
-  "SUPERENDIVIDAMENTO",
-  "CARTÕES",
-  "DCRPF",
-  "OBP",
-  "CONSIGNADO",
-  "OBF",
-  "SERVIÇOS BANCÁRIOS",
-  "FRAUDES E ILÍCITOS",
-  "SUCUMBÊNCIAS",
-  "ELETROBRÁS",
-  "MELI",
-  "PLANOS ECONÔMICOS",
   "ITAÚ",
-  
-  "BRADESCO",
+  "MELI",
+  "OBF",
+  "OBP",
+  "PLANOS ECONÔMICOS",
+  "SERVIÇOS BANCÁRIOS",
+  "SUCUMBÊNCIAS",
+  "SUPERENDIVIDAMENTO",
+  "TRIBUNAIS SUPERIORES",
   "VIVO",
-  "ACORDOS",
 ];
 
 const OBSERVACOES = ["Faz SE", "Não faz SE"];
