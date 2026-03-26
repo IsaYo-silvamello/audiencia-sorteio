@@ -41,19 +41,19 @@ interface Pessoa {
 }
 
 const CLIENTES_PREPOSTO = [
+  "Acordos",
+  "BRADESCO",
+  "Eletrobrás",
   "GERAL",
   "ITAÚ",
-  "ITAÚ - SB/FRAUDE/CONSIGNADO",
-  "ITAÚ JV",
+  "ITAÚ - CARTÕES",
   "ITAÚ - Fraudes",
+  "ITAÚ - SB/FRAUDE/CONSIGNADO",
   "ITAÚ - SUPERENDIVIDAMENTO",
+  "ITAÚ JV",
+  "MELI",
   "PLANOS ECONÔMICOS",
   "VIVO",
-  "BRADESCO",
-  "MELI",
-  "Acordos",
-  "Eletrobrás",
-  "ITAÚ - CARTÕES",
 ];
 
 const EQUIPES = [
