@@ -81,6 +81,7 @@ const CARTEIRAS = [
   "ELETROBRÁS",
   "MELI",
   "PLANOS ECONÔMICOS",
+  "ITAÚ",
   
   "BRADESCO",
   "VIVO",
