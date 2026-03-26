@@ -7,6 +7,37 @@ import { Upload, FileSpreadsheet, CheckCircle2 } from "lucide-react";
 import * as XLSX from "xlsx";
 
 const HEADER_MAP: Record<string, string> = {
+  // === Planilhas Seven e eLaw (cabeçalhos reais) ===
+  "NPC": "npc_dossie",
+  "DATA/HORA PRAZO": "data_audiencia",
+  "DATAPRAZO": "data_audiencia",
+  "HORA DO COMPROMISSO": "hora_audiencia",
+  "HORA DO PRAZO": "hora_audiencia",
+  "SUB TIPO COMPROMISSO": "tipo_audiencia",
+  "PARTE CLIENTE": "reu",
+  "PARTE ADVERSA": "autor",
+  "NÚMERO DO PROCESSO": "numero_processo",
+  "NUMERO DO PROCESSO": "numero_processo",
+  "COMARCA": "comarca",
+  "FORO": "foro",
+  "ASSUNTO": "assunto",
+  "CARTEIRA": "carteira",
+  "ESTRATÉGIA": "estrategia",
+  "ESTRATEGIA": "estrategia",
+  "ADVOGADO ADVERSO": "adv_do_autor",
+  "ADV. RESPONSÁVEL PROCESSO": "adv_responsavel",
+  "ADV. RESPONSAVEL PROCESSO": "adv_responsavel",
+  "OBSERVAÇÃO PROCESSO": "observacoes",
+  "OBSERVACAO PROCESSO": "observacoes",
+  "OBSERVAÇÃO DO PRAZO": "observacoes",
+  "OBSERVACAO DO PRAZO": "observacoes",
+  "ID PROCESSO": "id_planilha",
+  "STATUS DO COMPROMISSO": "status",
+  "STATUS DO PRAZO": "status",
+  "LOCAL": "local",
+  "ESTADO": "estado_temp",
+
+  // === Fallback (mapeamento antigo) ===
   "ID": "id_planilha",
   "NPC/DOSSIÊ": "npc_dossie",
   "NPC/DOSSIE": "npc_dossie",
@@ -17,16 +48,9 @@ const HEADER_MAP: Record<string, string> = {
   "HORARIO": "hora_audiencia",
   "TIPO DA AUDIENCIA": "tipo_audiencia",
   "TIPO DA AUDIÊNCIA": "tipo_audiencia",
-  "FORO": "foro",
-  "COMARCA": "comarca",
-  "ASSUNTO": "assunto",
-  "CARTEIRA": "carteira",
   "STATUS": "status",
-  "LOCAL": "local",
   "ADVOGADO": "advogado",
   "PREPOSTO": "preposto",
-  "ESTRATÉGIA": "estrategia",
-  "ESTRATEGIA": "estrategia",
   "ESTRATÉGIA SMAA": "estrategia_smaa",
   "ESTRATEGIA SMAA": "estrategia_smaa",
   "CLIENTE (RÉU)": "reu",
@@ -54,14 +78,55 @@ function parseExcelDate(value: any): string | null {
     }
   }
   const str = String(value).trim();
+  // "26/03/2026" format
   const brMatch = str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (brMatch) return `${brMatch[3]}-${brMatch[2]}-${brMatch[1]}`;
+  // "26/03/2026 14:00" format (Data/Hora Prazo)
+  const brDateTimeMatch = str.match(/^(\d{2})\/(\d{2})\/(\d{4})\s/);
+  if (brDateTimeMatch) return `${brDateTimeMatch[3]}-${brDateTimeMatch[2]}-${brDateTimeMatch[1]}`;
+  // Already ISO
+  if (str.match(/^\d{4}-\d{2}-\d{2}/)) return str.substring(0, 10);
   return str;
+}
+
+function parseExcelTime(value: any): string | null {
+  if (!value) return null;
+  const str = String(value).trim();
+  // "14:00" or "14:00:00"
+  const timeMatch = str.match(/(\d{1,2}:\d{2}(:\d{2})?)/);
+  if (timeMatch) return timeMatch[1];
+  // Excel serial time (fraction of day)
+  if (typeof value === "number" && value < 1) {
+    const totalMinutes = Math.round(value * 24 * 60);
+    const h = String(Math.floor(totalMinutes / 60)).padStart(2, "0");
+    const m = String(totalMinutes % 60).padStart(2, "0");
+    return `${h}:${m}`;
+  }
+  return null;
+}
+
+function extractTimeFromDateTime(value: any): string | null {
+  if (!value) return null;
+  const str = String(value).trim();
+  // Extract time from "26/03/2026 14:00:00" or similar
+  const match = str.match(/\d{2}\/\d{2}\/\d{4}\s+(\d{1,2}:\d{2}(:\d{2})?)/);
+  if (match) return match[1];
+  return null;
+}
+
+function normalizeStatus(value: string): string {
+  const lower = value.toLowerCase().trim();
+  if (lower === "pendente" || lower.includes("pendente")) return "pendente";
+  if (lower === "concluído" || lower === "concluido" || lower.includes("conclu")) return "realizada";
+  if (lower === "cancelado" || lower === "cancelada" || lower.includes("cancel")) return "cancelada";
+  if (lower.includes("atribu")) return "atribuida";
+  if (lower.includes("realiz")) return "realizada";
+  return "pendente";
 }
 
 const ImportacaoSegura = () => {
   const [importing, setImporting] = useState(false);
-  const [result, setResult] = useState<{ total: number; inserted: number } | null>(null);
+  const [result, setResult] = useState<{ total: number; inserted: number; updated: number } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -74,6 +139,7 @@ const ImportacaoSegura = () => {
 
     let totalRows = 0;
     let totalInserted = 0;
+    let totalUpdated = 0;
 
     try {
       for (const file of Array.from(files)) {
@@ -91,25 +157,68 @@ const ImportacaoSegura = () => {
           return acc;
         }, {});
 
+        // Check if "Data/Hora Prazo" column exists (to extract time from it)
+        const dataHoraCol = headers.find(h => h.trim().toUpperCase() === "DATA/HORA PRAZO");
+        const hasHoraCol = headers.some(h => {
+          const k = h.trim().toUpperCase();
+          return k === "HORA DO COMPROMISSO" || k === "HORA DO PRAZO";
+        });
+
         for (const row of rows) {
-          const record: Record<string, any> = { autor: "Desconhecido", reu: "Desconhecido", status: "pendente" };
+          const record: Record<string, any> = { status: "pendente" };
+
           for (const [excelCol, dbCol] of Object.entries(mapped)) {
+            if (dbCol === "estado_temp") continue; // skip temp fields
             let val = row[excelCol];
             if (dbCol === "data_audiencia") val = parseExcelDate(val);
+            else if (dbCol === "hora_audiencia") val = parseExcelTime(val);
+            else if (dbCol === "status") val = normalizeStatus(String(val));
             if (val !== "" && val !== null && val !== undefined) record[dbCol] = String(val);
           }
+
+          // If no hora_audiencia but we have Data/Hora Prazo, extract time from it
+          if (!record.hora_audiencia && dataHoraCol && !hasHoraCol) {
+            const extracted = extractTimeFromDateTime(row[dataHoraCol]);
+            if (extracted) record.hora_audiencia = extracted;
+          }
+
+          // Defaults
           if (!record.autor || record.autor === "") record.autor = "Desconhecido";
           if (!record.reu || record.reu === "") record.reu = "Desconhecido";
 
-          const { error } = await supabase.from("audiencias").insert(record);
-          if (!error) totalInserted++;
+          // Deduplication: upsert by npc_dossie + numero_processo
+          if (record.npc_dossie && record.numero_processo) {
+            const { data: existing } = await supabase
+              .from("audiencias")
+              .select("id")
+              .eq("npc_dossie", record.npc_dossie)
+              .eq("numero_processo", record.numero_processo)
+              .maybeSingle();
+
+            if (existing) {
+              const { error } = await supabase
+                .from("audiencias")
+                .update(record)
+                .eq("id", existing.id);
+              if (!error) totalUpdated++;
+            } else {
+              const { error } = await supabase.from("audiencias").insert(record);
+              if (!error) totalInserted++;
+            }
+          } else {
+            const { error } = await supabase.from("audiencias").insert(record);
+            if (!error) totalInserted++;
+          }
         }
 
         totalRows += rows.length;
       }
 
-      setResult({ total: totalRows, inserted: totalInserted });
-      toast({ title: `${totalInserted} audiências importadas de ${totalRows} (${files.length} arquivo${files.length > 1 ? "s" : ""})` });
+      setResult({ total: totalRows, inserted: totalInserted, updated: totalUpdated });
+      toast({
+        title: `Importação concluída`,
+        description: `${totalInserted} inseridas, ${totalUpdated} atualizadas de ${totalRows} registros (${files.length} arquivo${files.length > 1 ? "s" : ""})`,
+      });
     } catch (err: any) {
       toast({ title: "Erro na importação", description: err.message, variant: "destructive" });
     } finally {
@@ -127,7 +236,7 @@ const ImportacaoSegura = () => {
           </div>
           <div>
             <CardTitle>Importação de Planilha</CardTitle>
-            <CardDescription>Importe audiências a partir de arquivo .xlsx ou .xls</CardDescription>
+            <CardDescription>Importe audiências a partir de arquivo .xlsx ou .xls (Seven e eLaw)</CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -147,14 +256,14 @@ const ImportacaoSegura = () => {
           className="w-full"
         >
           <Upload className="h-5 w-5 mr-2" />
-          {importing ? "Importando..." : "Selecionar Planilha"}
+          {importing ? "Importando..." : "Selecionar Planilhas (Seven / eLaw)"}
         </Button>
 
         {result && (
           <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
             <CheckCircle2 className="h-5 w-5 text-green-600" />
             <p className="text-sm text-green-800">
-              {result.inserted} de {result.total} registros importados com sucesso.
+              {result.inserted} inseridas, {result.updated} atualizadas de {result.total} registros.
             </p>
           </div>
         )}
