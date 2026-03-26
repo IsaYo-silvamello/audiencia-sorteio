@@ -4,12 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  Calendar, Clock, Users, ChevronLeft, ChevronRight, ChevronDown,
-  Monitor, Video, Gavel, ShieldAlert, Link2, Building2, MapPin,
-  CheckCircle2, AlertTriangle, Lock
+  Calendar, Clock, Users, ChevronLeft, ChevronRight,
+  Video, Gavel, ShieldAlert, Link2, Building2, MapPin,
+  CheckCircle2, AlertTriangle, Lock, Pencil, Monitor, ExternalLink
 } from "lucide-react";
 import { startOfWeek, endOfWeek, addWeeks, format, isSameWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -43,15 +45,6 @@ interface PautaSemanal {
 
 type Categoria = "concil_online" | "concil_presencial" | "aij_presencial" | "aij_online" | "super_endividamento" | "outros";
 
-const CATEGORIAS: Record<Categoria, { label: string; icon: any; color: string; bgColor: string }> = {
-  concil_online: { label: "Conciliatória Online", icon: Video, color: "text-blue-700 dark:text-blue-300", bgColor: "bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800" },
-  concil_presencial: { label: "Conciliatória Presencial", icon: Building2, color: "text-emerald-700 dark:text-emerald-300", bgColor: "bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800" },
-  aij_presencial: { label: "AIJ Presencial", icon: Gavel, color: "text-orange-700 dark:text-orange-300", bgColor: "bg-orange-50 dark:bg-orange-950/50 border-orange-200 dark:border-orange-800" },
-  aij_online: { label: "AIJ Online", icon: Monitor, color: "text-purple-700 dark:text-purple-300", bgColor: "bg-purple-50 dark:bg-purple-950/50 border-purple-200 dark:border-purple-800" },
-  super_endividamento: { label: "Super Endividamento", icon: ShieldAlert, color: "text-rose-700 dark:text-rose-300", bgColor: "bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-800" },
-  outros: { label: "Outros", icon: Calendar, color: "text-muted-foreground", bgColor: "bg-muted/50 border-border" },
-};
-
 function isPresencial(aud: Audiencia): boolean {
   const tipo = (aud.tipo_audiencia || "").toLowerCase();
   const local = (aud.local || "").toLowerCase();
@@ -72,15 +65,38 @@ function categorizar(aud: Audiencia): Categoria {
   return "outros";
 }
 
+function getCategoriaLabel(cat: Categoria): string {
+  const labels: Record<Categoria, string> = {
+    concil_online: "Conciliatória Online",
+    concil_presencial: "Conciliatória Presencial",
+    aij_presencial: "AIJ Presencial",
+    aij_online: "AIJ Online",
+    super_endividamento: "Super Endividamento",
+    outros: "Outros",
+  };
+  return labels[cat];
+}
+
+function getPendencias(aud: Audiencia): string[] {
+  const pends: string[] = [];
+  if (!aud.advogado) pends.push("Sem advogado");
+  if (!aud.preposto) pends.push("Sem preposto");
+  if (!isPresencial(aud) && !aud.link) pends.push("Sem link");
+  if (isPresencial(aud) && !aud.foro) pends.push("Sem foro/endereço");
+  return pends;
+}
+
 type KpiFilter = "total" | "atribuidas" | "pendentes" | null;
 
 export default function DashboardHome() {
   const [semanaAtual, setSemanaAtual] = useState(() => startOfWeek(new Date(), { weekStartsOn: 0 }));
   const [audiencias, setAudiencias] = useState<Audiencia[]>([]);
   const [pauta, setPauta] = useState<PautaSemanal | null>(null);
-  const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
   const [finalizando, setFinalizando] = useState(false);
   const [kpiModal, setKpiModal] = useState<KpiFilter>(null);
+  const [editAud, setEditAud] = useState<Audiencia | null>(null);
+  const [editForm, setEditForm] = useState<Partial<Audiencia>>({});
+  const [saving, setSaving] = useState(false);
 
   const inicio = useMemo(() => semanaAtual, [semanaAtual]);
   const fim = useMemo(() => endOfWeek(semanaAtual, { weekStartsOn: 0 }), [semanaAtual]);
@@ -126,22 +142,16 @@ export default function DashboardHome() {
     return () => { supabase.removeChannel(channel); };
   }, [fetchData]);
 
-  const porCategoria = useMemo(() => {
-    const map: Record<Categoria, Audiencia[]> = {
-      concil_online: [], concil_presencial: [], aij_presencial: [], aij_online: [], super_endividamento: [], outros: [],
-    };
-    audiencias.forEach((a) => map[categorizar(a)].push(a));
-    return map;
-  }, [audiencias]);
-
   const alertas = useMemo(() => {
     const result: { label: string; count: number; icon: any }[] = [];
-    const semAdvPrep = audiencias.filter((a) => !a.advogado && !a.preposto).length;
-    if (semAdvPrep > 0) result.push({ label: "audiências sem advogado/preposto", count: semAdvPrep, icon: Users });
+    const semAdv = audiencias.filter((a) => !a.advogado).length;
+    if (semAdv > 0) result.push({ label: "audiências sem advogado", count: semAdv, icon: Users });
+    const semPrep = audiencias.filter((a) => !a.preposto).length;
+    if (semPrep > 0) result.push({ label: "audiências sem preposto", count: semPrep, icon: Users });
     const onlineSemLink = audiencias.filter((a) => !isPresencial(a) && !a.link).length;
     if (onlineSemLink > 0) result.push({ label: "audiências online sem link", count: onlineSemLink, icon: Link2 });
     const presencialSemForo = audiencias.filter((a) => isPresencial(a) && !a.foro).length;
-    if (presencialSemForo > 0) result.push({ label: "audiências presenciais sem foro", count: presencialSemForo, icon: MapPin });
+    if (presencialSemForo > 0) result.push({ label: "audiências presenciais sem foro/endereço", count: presencialSemForo, icon: MapPin });
     return result;
   }, [audiencias]);
 
@@ -181,20 +191,61 @@ export default function DashboardHome() {
   };
 
   const totalPeriodo = audiencias.length;
-  const atribuidasPeriodo = audiencias.filter((a) => a.advogado || a.preposto).length;
-  const pendentesPeriodo = audiencias.filter((a) => !a.advogado && !a.preposto).length;
+  const atribuidasPeriodo = audiencias.filter((a) => a.advogado && a.preposto && (isPresencial(a) ? !!a.foro : !!a.link)).length;
+  const pendentesPeriodo = totalPeriodo - atribuidasPeriodo;
 
-  const toggleCard = (key: string) => setOpenCards((prev) => ({ ...prev, [key]: !prev[key] }));
-
-  // Filtered list for KPI modal
   const kpiAudiencias = useMemo(() => {
     if (kpiModal === "total") return audiencias;
-    if (kpiModal === "atribuidas") return audiencias.filter((a) => a.advogado || a.preposto);
-    if (kpiModal === "pendentes") return audiencias.filter((a) => !a.advogado && !a.preposto);
+    if (kpiModal === "atribuidas") return audiencias.filter((a) => a.advogado && a.preposto && (isPresencial(a) ? !!a.foro : !!a.link));
+    if (kpiModal === "pendentes") return audiencias.filter((a) => !a.advogado || !a.preposto || (!isPresencial(a) && !a.link) || (isPresencial(a) && !a.foro));
     return [];
   }, [kpiModal, audiencias]);
 
-  const kpiTitle = kpiModal === "total" ? "Todas as Audiências" : kpiModal === "atribuidas" ? "Audiências Atribuídas" : "Audiências Pendentes";
+  const kpiTitle = kpiModal === "total" ? "Todas as Audiências" : kpiModal === "atribuidas" ? "Audiências Completas" : "Audiências com Pendências";
+
+  const openEdit = (aud: Audiencia) => {
+    setEditAud(aud);
+    setEditForm({
+      npc_dossie: aud.npc_dossie || "",
+      autor: aud.autor,
+      reu: aud.reu,
+      advogado: aud.advogado || "",
+      preposto: aud.preposto || "",
+      link: aud.link || "",
+      foro: aud.foro || "",
+      local: aud.local || "",
+      numero_processo: aud.numero_processo || "",
+      tipo_audiencia: aud.tipo_audiencia || "",
+      carteira: aud.carteira || "",
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editAud) return;
+    setSaving(true);
+    const { error } = await supabase.from("audiencias").update({
+      npc_dossie: editForm.npc_dossie || null,
+      autor: editForm.autor || editAud.autor,
+      reu: editForm.reu || editAud.reu,
+      advogado: editForm.advogado || null,
+      preposto: editForm.preposto || null,
+      link: editForm.link || null,
+      foro: editForm.foro || null,
+      local: editForm.local || null,
+      numero_processo: editForm.numero_processo || null,
+      tipo_audiencia: editForm.tipo_audiencia || null,
+      carteira: editForm.carteira || null,
+    }).eq("id", editAud.id);
+
+    if (error) {
+      toast.error("Erro ao salvar: " + error.message);
+    } else {
+      toast.success("Audiência atualizada!");
+      setEditAud(null);
+      fetchData();
+    }
+    setSaving(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -271,11 +322,11 @@ export default function DashboardHome() {
         </div>
       )}
 
-      {/* KPI Cards - clickable */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-3 gap-4">
         {([
           { key: "total" as KpiFilter, label: "Total", value: totalPeriodo, icon: Calendar, color: "text-primary", bgIcon: "bg-blue-50 dark:bg-blue-950/50" },
-          { key: "atribuidas" as KpiFilter, label: "Atribuídas", value: atribuidasPeriodo, icon: CheckCircle2, color: "text-green-600", bgIcon: "bg-green-50 dark:bg-green-950/50" },
+          { key: "atribuidas" as KpiFilter, label: "Completas", value: atribuidasPeriodo, icon: CheckCircle2, color: "text-green-600", bgIcon: "bg-green-50 dark:bg-green-950/50" },
           { key: "pendentes" as KpiFilter, label: "Pendentes", value: pendentesPeriodo, icon: AlertTriangle, color: pendentesPeriodo > 0 ? "text-amber-600" : "text-green-600", bgIcon: pendentesPeriodo > 0 ? "bg-amber-50 dark:bg-amber-950/50" : "bg-green-50 dark:bg-green-950/50" },
         ]).map(({ key, label, value, icon: Icon, color, bgIcon }) => (
           <Card
@@ -297,7 +348,7 @@ export default function DashboardHome() {
       </div>
 
       {/* KPI Detail Inline */}
-      {kpiModal && kpiAudiencias.length > 0 && (
+      {kpiModal && (
         <Card className="border-2 border-primary/20">
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-base">{kpiTitle} — {semanaLabel}</CardTitle>
@@ -306,130 +357,105 @@ export default function DashboardHome() {
             </Button>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="overflow-auto max-h-[60vh]">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data/Hora</TableHead>
-                    <TableHead>Autor x Réu</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Advogado</TableHead>
-                    <TableHead>Preposto</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {kpiAudiencias.map((aud) => (
-                    <TableRow key={aud.id}>
-                      <TableCell className="whitespace-nowrap text-sm">
-                        {aud.data_audiencia
-                          ? format(new Date(aud.data_audiencia + "T00:00:00"), "dd/MM", { locale: ptBR })
-                          : "—"}{" "}
-                        {aud.hora_audiencia?.slice(0, 5) || ""}
-                      </TableCell>
-                      <TableCell className="text-sm font-medium max-w-[200px] truncate">
-                        {aud.autor} x {aud.reu}
-                      </TableCell>
-                      <TableCell className="text-sm">{aud.tipo_audiencia || "—"}</TableCell>
-                      <TableCell className="text-sm">
-                        {aud.advogado ? (
-                          <span className="text-blue-700 dark:text-blue-300">{aud.advogado}</span>
-                        ) : (
-                          <span className="text-amber-600">⚠ Pendente</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {aud.preposto ? (
-                          <span className="text-emerald-700 dark:text-emerald-300">{aud.preposto}</span>
-                        ) : (
-                          <span className="text-amber-600">⚠ Pendente</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={!aud.advogado && !aud.preposto ? "outline" : "default"} className="text-xs">
-                          {aud.advogado || aud.preposto ? "Atribuída" : "Pendente"}
-                        </Badge>
-                      </TableCell>
+            {kpiAudiencias.length === 0 ? (
+              <p className="text-muted-foreground text-center py-6">Nenhuma audiência encontrada.</p>
+            ) : (
+              <div className="overflow-auto max-h-[60vh]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[100px]">NPC</TableHead>
+                      <TableHead>Data/Hora</TableHead>
+                      <TableHead>Autor x Réu</TableHead>
+                      <TableHead>Categoria</TableHead>
+                      <TableHead>Advogado</TableHead>
+                      <TableHead>Preposto</TableHead>
+                      <TableHead>Link/Foro</TableHead>
+                      <TableHead>Pendências</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {kpiAudiencias.map((aud) => {
+                      const pends = getPendencias(aud);
+                      const cat = categorizar(aud);
+                      return (
+                        <TableRow key={aud.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openEdit(aud)}>
+                          <TableCell className="text-sm font-mono font-bold text-primary">
+                            {aud.npc_dossie || "—"}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-sm">
+                            {aud.data_audiencia
+                              ? format(new Date(aud.data_audiencia + "T00:00:00"), "dd/MM", { locale: ptBR })
+                              : "—"}{" "}
+                            {aud.hora_audiencia?.slice(0, 5) || ""}
+                          </TableCell>
+                          <TableCell className="text-sm font-medium max-w-[180px] truncate">
+                            {aud.autor} x {aud.reu}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            <Badge variant="outline" className="text-[10px]">
+                              {getCategoriaLabel(cat)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {aud.advogado ? (
+                              <span className="text-blue-700 dark:text-blue-300">{aud.advogado}</span>
+                            ) : (
+                              <span className="text-amber-600">⚠ Pendente</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {aud.preposto ? (
+                              <span className="text-emerald-700 dark:text-emerald-300">{aud.preposto}</span>
+                            ) : (
+                              <span className="text-amber-600">⚠ Pendente</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {!isPresencial(aud) ? (
+                              aud.link ? (
+                                <a href={aud.link} target="_blank" rel="noopener noreferrer" className="text-primary flex items-center gap-1 hover:underline" onClick={(e) => e.stopPropagation()}>
+                                  <ExternalLink className="h-3 w-3" /> Link
+                                </a>
+                              ) : (
+                                <span className="text-red-500 flex items-center gap-1"><Link2 className="h-3 w-3" /> Sem link</span>
+                              )
+                            ) : (
+                              aud.foro ? (
+                                <span className="text-muted-foreground truncate max-w-[120px] block">{aud.foro}</span>
+                              ) : (
+                                <span className="text-red-500 flex items-center gap-1"><MapPin className="h-3 w-3" /> Sem foro</span>
+                              )
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {pends.length > 0 ? (
+                              <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300">
+                                {pends.length} pend.
+                              </Badge>
+                            ) : (
+                              <Badge className="text-[10px] bg-green-100 text-green-700 border-green-300">
+                                OK
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {/* Category Cards */}
-      {totalPeriodo > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {(Object.entries(CATEGORIAS) as [Categoria, typeof CATEGORIAS[Categoria]][])
-            .filter(([key]) => porCategoria[key].length > 0)
-            .map(([key, cat]) => {
-              const lista = porCategoria[key];
-              const Icon = cat.icon;
-              return (
-                <Collapsible key={key} open={openCards[key]} onOpenChange={() => toggleCard(key)}>
-                  <Card className={`border ${cat.bgColor} transition-all`}>
-                    <CollapsibleTrigger asChild>
-                      <CardHeader className="p-4 cursor-pointer hover:opacity-80">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Icon className={`h-5 w-5 ${cat.color}`} />
-                            <CardTitle className={`text-sm font-semibold ${cat.color}`}>{cat.label}</CardTitle>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="text-lg font-bold px-3">{lista.length}</Badge>
-                            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${openCards[key] ? "rotate-180" : ""}`} />
-                          </div>
-                        </div>
-                      </CardHeader>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <CardContent className="px-4 pb-4 pt-0">
-                        <div className="space-y-2 max-h-60 overflow-y-auto">
-                          {lista.map((aud) => (
-                            <div key={aud.id} className="text-xs bg-background/80 rounded-md p-2.5 border border-border/50 space-y-1">
-                              <div className="flex justify-between items-start gap-2">
-                                <span className="font-medium truncate flex-1">{aud.autor} x {aud.reu}</span>
-                                <Badge variant={!aud.advogado && !aud.preposto ? "outline" : "default"} className="text-[10px] shrink-0">
-                                  {aud.advogado || aud.preposto ? "atribuída" : "pendente"}
-                                </Badge>
-                              </div>
-                              <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-muted-foreground">
-                                {aud.data_audiencia && (
-                                  <span>{format(new Date(aud.data_audiencia + "T00:00:00"), "dd/MM", { locale: ptBR })} {aud.hora_audiencia?.slice(0, 5) || ""}</span>
-                                )}
-                                {aud.numero_processo && <span>Proc: {aud.numero_processo.slice(-8)}</span>}
-                              </div>
-                              <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-                                {aud.advogado ? (
-                                  <span className="text-blue-700 dark:text-blue-300">Adv: {aud.advogado}</span>
-                                ) : (
-                                  <span className="text-amber-600">⚠ Sem advogado</span>
-                                )}
-                                {aud.preposto ? (
-                                  <span className="text-emerald-700 dark:text-emerald-300">Prep: {aud.preposto}</span>
-                                ) : (
-                                  <span className="text-amber-600">⚠ Sem preposto</span>
-                                )}
-                              </div>
-                              {!isPresencial(aud) && !aud.link && (
-                                <span className="text-red-500 flex items-center gap-1"><Link2 className="h-3 w-3" /> Sem link</span>
-                              )}
-                              {isPresencial(aud) && !aud.foro && (
-                                <span className="text-red-500 flex items-center gap-1"><MapPin className="h-3 w-3" /> Sem foro</span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </CollapsibleContent>
-                  </Card>
-                </Collapsible>
-              );
-            })}
-        </div>
-      ) : (
+      {/* Empty state when no KPI selected and no hearings */}
+      {!kpiModal && totalPeriodo === 0 && (
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
             <Calendar className="h-10 w-10 mx-auto mb-3 opacity-40" />
@@ -438,6 +464,78 @@ export default function DashboardHome() {
           </CardContent>
         </Card>
       )}
+
+      {/* Edit Dialog */}
+      <Dialog open={editAud !== null} onOpenChange={(open) => !open && setEditAud(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-4 w-4" />
+              Editar Audiência {editForm.npc_dossie ? `— NPC ${editForm.npc_dossie}` : ""}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>NPC / Dossiê</Label>
+                <Input value={editForm.npc_dossie || ""} onChange={(e) => setEditForm((f) => ({ ...f, npc_dossie: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Nº Processo</Label>
+                <Input value={editForm.numero_processo || ""} onChange={(e) => setEditForm((f) => ({ ...f, numero_processo: e.target.value }))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Autor</Label>
+                <Input value={editForm.autor || ""} onChange={(e) => setEditForm((f) => ({ ...f, autor: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Réu</Label>
+                <Input value={editForm.reu || ""} onChange={(e) => setEditForm((f) => ({ ...f, reu: e.target.value }))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Advogado</Label>
+                <Input value={editForm.advogado || ""} onChange={(e) => setEditForm((f) => ({ ...f, advogado: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Preposto</Label>
+                <Input value={editForm.preposto || ""} onChange={(e) => setEditForm((f) => ({ ...f, preposto: e.target.value }))} />
+              </div>
+            </div>
+            <div>
+              <Label>Link (audiência online)</Label>
+              <Input value={editForm.link || ""} onChange={(e) => setEditForm((f) => ({ ...f, link: e.target.value }))} placeholder="https://..." />
+            </div>
+            <div>
+              <Label>Foro / Endereço (audiência presencial)</Label>
+              <Input value={editForm.foro || ""} onChange={(e) => setEditForm((f) => ({ ...f, foro: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Tipo de Audiência</Label>
+                <Input value={editForm.tipo_audiencia || ""} onChange={(e) => setEditForm((f) => ({ ...f, tipo_audiencia: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Carteira</Label>
+                <Input value={editForm.carteira || ""} onChange={(e) => setEditForm((f) => ({ ...f, carteira: e.target.value }))} />
+              </div>
+            </div>
+            <div>
+              <Label>Local</Label>
+              <Input value={editForm.local || ""} onChange={(e) => setEditForm((f) => ({ ...f, local: e.target.value }))} />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setEditAud(null)}>Cancelar</Button>
+              <Button onClick={handleSaveEdit} disabled={saving}>
+                {saving ? "Salvando..." : "Salvar"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
