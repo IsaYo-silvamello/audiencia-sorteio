@@ -366,8 +366,8 @@ const ImportacaoSegura = () => {
       await fetchHistorico();
 
       toast({
-        title: "Importação concluída",
-        description: `${totalInserted} inseridas, ${totalUpdated} atualizadas de ${totalRows} registros (${files.length} arquivo${files.length > 1 ? "s" : ""})`,
+        title: "✅ Importação concluída",
+        description: `${totalRows} registros processados com sucesso.`,
       });
     } catch (err: any) {
       console.error("Erro na importação:", err);
