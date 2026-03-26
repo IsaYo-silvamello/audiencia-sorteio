@@ -2,8 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileSpreadsheet, CheckCircle2, Clock, History } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, Clock, History, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx";
@@ -145,6 +146,8 @@ interface HistoricoImportacao {
 
 const ImportacaoSegura = () => {
   const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importStatus, setImportStatus] = useState("");
   const [result, setResult] = useState<{ total: number; inserted: number; updated: number } | null>(null);
   const [historico, setHistorico] = useState<HistoricoImportacao[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -169,6 +172,8 @@ const ImportacaoSegura = () => {
 
     setImporting(true);
     setResult(null);
+    setImportProgress(0);
+    setImportStatus("Lendo planilhas...");
 
     let totalRows = 0;
     let totalInserted = 0;
@@ -181,9 +186,12 @@ const ImportacaoSegura = () => {
         const buffer = await file.arrayBuffer();
         const wb = XLSX.read(buffer, { type: "array" });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+         const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+         const allRowsCount = rows.length;
 
         if (rows.length === 0) continue;
+
+        setImportStatus(`Processando ${file.name} (${allRowsCount} registros)...`);
 
         const headers = Object.keys(rows[0]);
         const mapped = headers.reduce<Record<string, string>>((acc, h) => {
@@ -198,7 +206,10 @@ const ImportacaoSegura = () => {
           return k === "HORA DO COMPROMISSO" || k === "HORA DO PRAZO";
         });
 
+        let rowIndex = 0;
         for (const row of rows) {
+          rowIndex++;
+          setImportProgress(Math.round((rowIndex / allRowsCount) * 100));
           const record: Record<string, any> = { status: "pendente" };
 
           for (const [excelCol, dbCol] of Object.entries(mapped)) {
@@ -274,6 +285,18 @@ const ImportacaoSegura = () => {
   };
 
   return (
+    <>
+      {importing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4 p-8 rounded-xl bg-card border shadow-lg max-w-sm w-full mx-4">
+            <Loader2 className="h-12 w-12 text-primary animate-spin" />
+            <p className="text-lg font-semibold text-foreground">Importando...</p>
+            <p className="text-sm text-muted-foreground text-center">{importStatus}</p>
+            <Progress value={importProgress} className="w-full" />
+            <p className="text-xs text-muted-foreground">Não feche ou clique em nada até finalizar.</p>
+          </div>
+        </div>
+      )}
     <div className="space-y-6">
       <Card>
         <CardHeader>
@@ -357,6 +380,7 @@ const ImportacaoSegura = () => {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 };
 
