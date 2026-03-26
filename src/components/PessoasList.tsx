@@ -565,7 +565,7 @@ const PessoasList = () => {
 
               {formData.tipo === "advogado" && (
                 <>
-                  {renderEquipeSelect(formData.equipe, (v) => setFormData({ ...formData, equipe: v }))}
+                  {renderEquipeCheckboxes(formData.equipe, (v) => setFormData({ ...formData, equipe: v }))}
                 </>
               )}
               {renderCarteiraSelect(formData.carteira, (v) => setFormData({ ...formData, carteira: v }))}
