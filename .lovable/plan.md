@@ -1,105 +1,46 @@
 
 
-## Plano: Corrigir mapeamento de importação para planilhas Seven e eLaw
+## Plano: Corrigir espelhamento dos dados sem apagar nada
 
-### Problema identificado
+### Problema real
 
-O `HEADER_MAP` atual espera cabeçalhos como "NPC/DOSSIÊ", "AUTOR", "PROCESSO", "DATA", "HORÁRIO", "TIPO DA AUDIÊNCIA" — mas **nenhum desses existe** nas planilhas reais.
+Os 243 registros atuais no banco foram importados com o HEADER_MAP antigo. Campos como `npc_dossie` e `tipo_audiencia` estão `null`. A deduplicação atual usa `npc_dossie + numero_processo` como chave — mas como `npc_dossie` é `null` nos registros antigos, reimportar cria **duplicatas** em vez de atualizar.
 
-**Cabeçalhos reais da planilha Seven:**
-- `NPC` → npc_dossie
-- `Data/Hora Prazo` → data_audiencia
-- `Hora do compromisso` → hora_audiencia
-- `Sub Tipo Compromisso` → tipo_audiencia (ex: "Conciliatória virtual", "Conciliatória presencial")
-- `Parte Cliente` → reu (cliente = réu)
-- `Parte Adversa` → autor
-- `Número do Processo` → numero_processo
-- `Comarca` → comarca
-- `Foro` → foro
-- `Assunto` → assunto
-- `Carteira` → carteira
-- `Estratégia` → estrategia
-- `Advogado Adverso` → adv_do_autor
-- `Adv. Responsável Processo` → adv_responsavel
-- `Observação Processo` → observacoes
-- `ID Processo` → id_planilha
-- `Status do Compromisso` → status
+### Solução: mudar a chave de deduplicação para `numero_processo`
 
-**Cabeçalhos reais da planilha eLaw:**
-- `NPC` → npc_dossie
-- `DataPrazo` → data_audiencia
-- `Hora do Prazo` → hora_audiencia
-- `Sub Tipo Compromisso` → tipo_audiencia (ex: "CONCILIATÓRIA VIRTUAL", "CONCILIATÓRIA PRESENCIAL", "AUDIÊNCIA CONCILIAÇÃO, INSTRUÇÃO E JULGAMENTO - PRESENCIAL")
-- `Parte Cliente` → reu
-- `Parte Adversa` → autor
-- `Número do Processo` → numero_processo
-- `Comarca` → comarca
-- `Foro` → foro
-- `Assunto` → assunto
-- `Estratégia` → estrategia
-- `Advogado Adverso` → adv_do_autor
-- `Adv. Responsável Processo` → adv_responsavel
-- `Observação Processo` → observacoes
-- `ID Processo` → id_planilha
-- `Status do Prazo` → status
-- `local` → local
-- `Estado` → (campo novo ou ignorar)
-- `Observação do Prazo` → (pode conter link/endereço da audiência)
+Ao reimportar, o sistema deve:
 
-### Mudanças
+1. Buscar registro existente por **`numero_processo`** (não mais `npc_dossie + numero_processo`)
+2. Se encontrar, fazer **UPDATE** com todos os campos novos (preenchendo `npc_dossie`, `tipo_audiencia`, etc.)
+3. Se houver duplicatas (mesmo `numero_processo` aparece várias vezes), atualizar o primeiro e **deletar os extras**
+4. Se não encontrar, fazer **INSERT**
 
-**1. Reescrever o `HEADER_MAP` em `ImportacaoSegura.tsx`**
+Nenhum dado é apagado automaticamente. Os registros existentes são **complementados** com os dados corretos da planilha.
 
-Substituir completamente o mapeamento para cobrir os cabeçalhos reais de ambos os sistemas, mantendo os antigos como fallback:
+### Mudança no código
+
+**`src/components/ImportacaoSegura.tsx`** — alterar a lógica de upsert (linhas ~185-200):
 
 ```text
-"NPC"                        → npc_dossie
-"DATA/HORA PRAZO"            → data_audiencia  (Seven)
-"DATAPRAZO"                  → data_audiencia  (eLaw)
-"HORA DO COMPROMISSO"        → hora_audiencia  (Seven)
-"HORA DO PRAZO"              → hora_audiencia  (eLaw)
-"SUB TIPO COMPROMISSO"       → tipo_audiencia
-"PARTE CLIENTE"              → reu
-"PARTE ADVERSA"              → autor
-"NÚMERO DO PROCESSO"         → numero_processo
-"NUMERO DO PROCESSO"         → numero_processo
-"COMARCA"                    → comarca
-"FORO"                       → foro
-"ASSUNTO"                    → assunto
-"CARTEIRA"                   → carteira
-"ESTRATÉGIA"/"ESTRATEGIA"    → estrategia
-"ADVOGADO ADVERSO"           → adv_do_autor
-"ADV. RESPONSÁVEL PROCESSO"  → adv_responsavel
-"OBSERVAÇÃO PROCESSO"        → observacoes
-"OBSERVACAO PROCESSO"        → observacoes
-"ID PROCESSO"                → id_planilha
-"STATUS DO COMPROMISSO"      → status  (Seven)
-"STATUS DO PRAZO"            → status  (eLaw)
-"LOCAL"                      → local
-"OBSERVAÇÃO DO PRAZO"        → observacoes (eLaw - fallback)
-+ manter os mapeamentos antigos como fallback
+Antes:
+  if (record.npc_dossie && record.numero_processo) {
+    busca por npc_dossie + numero_processo → update ou insert
+  }
+
+Depois:
+  if (record.numero_processo) {
+    busca TODOS por numero_processo
+    se encontrou 1+: update o primeiro, delete os extras (duplicatas)
+    senão: insert
+  } else {
+    insert direto
+  }
 ```
 
-**2. Normalizar `tipo_audiencia` na importação**
+### Resultado
 
-O campo `Sub Tipo Compromisso` já traz valores como:
-- "Conciliatória virtual" / "CONCILIATÓRIA VIRTUAL"
-- "Conciliatória presencial" / "CONCILIATÓRIA PRESENCIAL"
-- "AUDIÊNCIA CONCILIAÇÃO, INSTRUÇÃO E JULGAMENTO - PRESENCIAL"
-
-Esses valores alimentam diretamente a função `categorizar()` no dashboard, que já faz `.toLowerCase()` e busca por "concilia", "instru", "presencial", "virtual". Funciona sem alteração.
-
-**3. Normalizar status na importação**
-
-Mapear "Pendente" → "pendente", "Concluído" → "realizada", etc., para manter consistência com o banco.
-
-**4. Tratar deduplicação**
-
-Ambas as planilhas podem trazer a mesma audiência. Usar `npc_dossie + numero_processo` como chave: antes de inserir, verificar se já existe registro com mesmo NPC e processo. Se existir, fazer `update` ao invés de `insert` para complementar dados.
+A advogada reimporta as mesmas planilhas Seven + eLaw → o sistema encontra os registros pelo `numero_processo` → preenche `npc_dossie`, `tipo_audiencia`, `local` etc. → dashboard espelha tudo corretamente. Dados antigos nunca são perdidos.
 
 ### Arquivo alterado
-- `src/components/ImportacaoSegura.tsx` — reescrever HEADER_MAP e lógica de insert/upsert
-
-### Resultado esperado
-Após reimportar as planilhas, o dashboard exibirá corretamente: NPC, tipo de audiência (online/presencial), categoria, autor, réu, comarca, foro e demais campos.
+- `src/components/ImportacaoSegura.tsx` — apenas a lógica de deduplicação/upsert
 
