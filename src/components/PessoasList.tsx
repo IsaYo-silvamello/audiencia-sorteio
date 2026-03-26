@@ -35,7 +35,25 @@ interface Pessoa {
   equipe?: string | null;
   carteira?: string | null;
   observacao?: string | null;
+  tipo_preposto?: string | null;
+  horario_trabalho?: string | null;
 }
+
+const CLIENTES_PREPOSTO = [
+  "GERAL",
+  "ITAÚ",
+  "ITAÚ - SB/FRAUDE/CONSIGNADO",
+  "ITAÚ JV",
+  "ITAÚ - Fraudes",
+  "ITAÚ - SUPERENDIVIDAMENTO",
+  "PLANOS ECONÔMICOS",
+  "VIVO",
+  "BRADESCO",
+  "MELI/BRADESCO",
+  "Acordos/geral",
+  "Eletrobrás/geral",
+  "ITAÚ - CARTÕES",
+];
 
 const EQUIPES = [
   "ELETROBRÁS",
@@ -84,6 +102,8 @@ const PessoasList = () => {
     equipe: "",
     carteira: "",
     observacao: "",
+    tipo_preposto: "",
+    horario_trabalho: "",
   });
   const [editPessoa, setEditPessoa] = useState<Pessoa | null>(null);
   const [editData, setEditData] = useState({
@@ -96,6 +116,8 @@ const PessoasList = () => {
     equipe: "",
     carteira: "",
     observacao: "",
+    tipo_preposto: "",
+    horario_trabalho: "",
   });
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -148,6 +170,13 @@ const PessoasList = () => {
         }
       }
 
+      if (formData.tipo === "preposto") {
+        dataToInsert.tipo_preposto = formData.tipo_preposto || null;
+        if (formData.tipo_preposto === "estagiario") {
+          dataToInsert.horario_trabalho = formData.horario_trabalho || null;
+        }
+      }
+
       const { error } = await supabase.from("pessoas").insert([dataToInsert]);
 
       if (error) throw error;
@@ -167,6 +196,8 @@ const PessoasList = () => {
         equipe: "",
         carteira: "",
         observacao: "",
+        tipo_preposto: "",
+        horario_trabalho: "",
       });
       fetchPessoas();
     } catch (error: any) {
@@ -215,6 +246,8 @@ const PessoasList = () => {
       equipe: pessoa.equipe || "",
       carteira: pessoa.carteira || "",
       observacao: pessoa.observacao || "",
+      tipo_preposto: pessoa.tipo_preposto || "",
+      horario_trabalho: pessoa.horario_trabalho || "",
     });
   };
 
@@ -240,10 +273,18 @@ const PessoasList = () => {
           updateData.estado = null;
           updateData.valor_audiencia = null;
         }
+        updateData.tipo_preposto = null;
+        updateData.horario_trabalho = null;
       } else {
         updateData.tipo_advogado = null;
         updateData.estado = null;
         updateData.valor_audiencia = null;
+        updateData.tipo_preposto = editData.tipo_preposto || null;
+        if (editData.tipo_preposto === "estagiario") {
+          updateData.horario_trabalho = editData.horario_trabalho || null;
+        } else {
+          updateData.horario_trabalho = null;
+        }
       }
 
       const { error } = await supabase
@@ -327,6 +368,12 @@ const PessoasList = () => {
             {pessoa.documento && <span>OAB/CPF: {pessoa.documento}</span>}
             {pessoa.tipo_advogado && (
               <span className="capitalize">{pessoa.tipo_advogado}</span>
+            )}
+            {pessoa.tipo_preposto && (
+              <span className="capitalize">Tipo: {pessoa.tipo_preposto === "estagiario" ? "Estagiário" : "Assistente"}</span>
+            )}
+            {pessoa.tipo_preposto === "estagiario" && pessoa.horario_trabalho && (
+              <span>Horário: {pessoa.horario_trabalho}</span>
             )}
             {pessoa.tipo_advogado === "externo" && pessoa.estado && (
               <span>Estado: {pessoa.estado}</span>
@@ -457,7 +504,49 @@ const PessoasList = () => {
                 </>
               )}
 
-              {renderEquipeSelect(formData.equipe, (v) => setFormData({ ...formData, equipe: v }))}
+              {formData.tipo === "preposto" && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Tipo de Preposto</Label>
+                    <Select value={formData.tipo_preposto} onValueChange={(v) => setFormData({ ...formData, tipo_preposto: v })}>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="estagiario">Estagiário</SelectItem>
+                        <SelectItem value="assistente">Assistente</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {formData.tipo_preposto === "estagiario" && (
+                    <div className="space-y-2">
+                      <Label>Horário de Trabalho</Label>
+                      <Input
+                        placeholder="Ex: 09:00 - 15:00"
+                        value={formData.horario_trabalho}
+                        onChange={(e) => setFormData({ ...formData, horario_trabalho: e.target.value })}
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label>Cliente</Label>
+                    <Select value={formData.equipe} onValueChange={(v) => setFormData({ ...formData, equipe: v })}>
+                      <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
+                      <SelectContent>
+                        {CLIENTES_PREPOSTO.map((c) => (
+                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+
+              {formData.tipo === "advogado" && (
+                <>
+                  {renderEquipeSelect(formData.equipe, (v) => setFormData({ ...formData, equipe: v }))}
+                </>
+              )}
               {renderCarteiraSelect(formData.carteira, (v) => setFormData({ ...formData, carteira: v }))}
               {renderObservacaoSelect(formData.observacao, (v) => setFormData({ ...formData, observacao: v }))}
 
@@ -569,7 +658,44 @@ const PessoasList = () => {
                 )}
               </>
             )}
-            {renderEquipeSelect(editData.equipe, (v) => setEditData({ ...editData, equipe: v }))}
+            {editData.tipo === "preposto" && (
+              <>
+                <div className="space-y-2">
+                  <Label>Tipo de Preposto</Label>
+                  <Select value={editData.tipo_preposto} onValueChange={(v) => setEditData({ ...editData, tipo_preposto: v })}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="estagiario">Estagiário</SelectItem>
+                      <SelectItem value="assistente">Assistente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {editData.tipo_preposto === "estagiario" && (
+                  <div className="space-y-2">
+                    <Label>Horário de Trabalho</Label>
+                    <Input
+                      value={editData.horario_trabalho}
+                      placeholder="Ex: 09:00 - 15:00"
+                      onChange={(e) => setEditData({ ...editData, horario_trabalho: e.target.value })}
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label>Cliente</Label>
+                  <Select value={editData.equipe} onValueChange={(v) => setEditData({ ...editData, equipe: v })}>
+                    <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
+                    <SelectContent>
+                      {CLIENTES_PREPOSTO.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+            {editData.tipo === "advogado" && renderEquipeSelect(editData.equipe, (v) => setEditData({ ...editData, equipe: v }))}
             {renderCarteiraSelect(editData.carteira, (v) => setEditData({ ...editData, carteira: v }))}
             {renderObservacaoSelect(editData.observacao, (v) => setEditData({ ...editData, observacao: v }))}
           </div>
