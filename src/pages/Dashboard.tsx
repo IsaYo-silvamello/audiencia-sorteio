@@ -10,6 +10,9 @@ import CalendarioAudiencias from "@/components/CalendarioAudiencias";
 import ImportacaoSegura from "@/components/ImportacaoSegura";
 import SorteioAudiencias from "@/components/SorteioAudiencias";
 import PessoasList from "@/components/PessoasList";
+import smaartArrow from "@/assets/smaart-arrow.png";
+import smaartTec from "@/assets/smaart-tec.png";
+import smLab from "@/assets/sm-lab.png";
 
 const MENU_ITEMS = [
   { key: "home", label: "Home", icon: LayoutGrid },
