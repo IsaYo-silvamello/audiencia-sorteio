@@ -406,7 +406,7 @@ const ImportacaoSegura = () => {
               <div>
                 <CardTitle>Importe sua pauta de audiências</CardTitle>
                 <CardDescription>
-                  Importe audiências a partir de arquivo .xlsx ou .xls nos layouts exp/eLaw e pauta
+                  Importe audiências a partir de arquivo .xlsx ou .xls nos layouts Seven/eLaw.
                 </CardDescription>
                 <p className="text-sm text-muted-foreground mt-1">
                   O sistema irá validar, identificar inconsistências e processar automaticamente as audiências.
