@@ -728,7 +728,7 @@ const PessoasList = () => {
                 </div>
               </>
             )}
-            {editData.tipo === "advogado" && renderEquipeSelect(editData.equipe, (v) => setEditData({ ...editData, equipe: v }))}
+            {editData.tipo === "advogado" && renderEquipeCheckboxes(editData.equipe, (v) => setEditData({ ...editData, equipe: v }))}
             {renderCarteiraSelect(editData.carteira, (v) => setEditData({ ...editData, carteira: v }))}
             {renderObservacaoSelect(editData.observacao, (v) => setEditData({ ...editData, observacao: v }))}
           </div>
