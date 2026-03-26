@@ -43,7 +43,7 @@ interface PautaSemanal {
   finalizada_em: string | null;
 }
 
-type Categoria = "concil_online" | "concil_presencial" | "aij_presencial" | "aij_online" | "super_endividamento" | "outros";
+type Categoria = "concil_online" | "concil_presencial" | "aij_online" | "aij_presencial" | "se_online" | "se_presencial" | "acij_online" | "acij_presencial" | "outros";
 
 function isPresencial(aud: Audiencia): boolean {
   const tipo = (aud.tipo_audiencia || "").toLowerCase();
@@ -56,12 +56,20 @@ function isPresencial(aud: Audiencia): boolean {
 
 function categorizar(aud: Audiencia): Categoria {
   const tipo = (aud.tipo_audiencia || "").toLowerCase();
-  if (tipo.includes("endividamento")) return "super_endividamento";
-  const isConcilia = tipo.includes("concilia");
-  const isAIJ = tipo.includes("instru") || tipo.includes("aij");
   const presencial = isPresencial(aud);
-  if (isConcilia) return presencial ? "concil_presencial" : "concil_online";
-  if (isAIJ) return presencial ? "aij_presencial" : "aij_online";
+
+  if (tipo.includes("endividamento") || tipo.match(/\bse\b/)) {
+    return presencial ? "se_presencial" : "se_online";
+  }
+  if (tipo.includes("acij") || tipo.includes("complementar")) {
+    return presencial ? "acij_presencial" : "acij_online";
+  }
+  if (tipo.includes("concilia")) {
+    return presencial ? "concil_presencial" : "concil_online";
+  }
+  if (tipo.includes("instru") || tipo.includes("aij")) {
+    return presencial ? "aij_presencial" : "aij_online";
+  }
   return "outros";
 }
 
@@ -69,9 +77,12 @@ function getCategoriaLabel(cat: Categoria): string {
   const labels: Record<Categoria, string> = {
     concil_online: "Conciliatória Online",
     concil_presencial: "Conciliatória Presencial",
-    aij_presencial: "AIJ Presencial",
     aij_online: "AIJ Online",
-    super_endividamento: "Super Endividamento",
+    aij_presencial: "AIJ Presencial",
+    se_online: "SE Online",
+    se_presencial: "SE Presencial",
+    acij_online: "ACIJ Online",
+    acij_presencial: "ACIJ Presencial",
     outros: "Outros",
   };
   return labels[cat];
