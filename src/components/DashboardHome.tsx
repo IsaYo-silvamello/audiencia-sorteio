@@ -360,6 +360,32 @@ export default function DashboardHome() {
         ))}
       </div>
 
+      {/* Presenciais vs Virtuais */}
+      <div className="grid grid-cols-2 gap-4">
+        <Card className="border">
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="h-12 w-12 rounded-xl bg-orange-50 dark:bg-orange-950/50 flex items-center justify-center shrink-0">
+              <Building2 className="h-6 w-6 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Audiências Presenciais</p>
+              <p className="text-3xl font-bold text-orange-600">{presenciaisPeriodo}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border">
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="h-12 w-12 rounded-xl bg-violet-50 dark:bg-violet-950/50 flex items-center justify-center shrink-0">
+              <Monitor className="h-6 w-6 text-violet-600" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Audiências Virtuais</p>
+              <p className="text-3xl font-bold text-violet-600">{virtuaisPeriodo}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* KPI Detail Inline */}
       {kpiModal && (
         <Card className="border-2 border-primary/20">
