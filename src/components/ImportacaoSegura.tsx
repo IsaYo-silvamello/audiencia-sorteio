@@ -1,9 +1,11 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileSpreadsheet, CheckCircle2 } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, Clock, History } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx";
 
 const HEADER_MAP: Record<string, string> = {
@@ -78,13 +80,10 @@ function parseExcelDate(value: any): string | null {
     }
   }
   const str = String(value).trim();
-  // "26/03/2026" format
   const brMatch = str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (brMatch) return `${brMatch[3]}-${brMatch[2]}-${brMatch[1]}`;
-  // "26/03/2026 14:00" format (Data/Hora Prazo)
   const brDateTimeMatch = str.match(/^(\d{2})\/(\d{2})\/(\d{4})\s/);
   if (brDateTimeMatch) return `${brDateTimeMatch[3]}-${brDateTimeMatch[2]}-${brDateTimeMatch[1]}`;
-  // Already ISO
   if (str.match(/^\d{4}-\d{2}-\d{2}/)) return str.substring(0, 10);
   return str;
 }
@@ -92,10 +91,8 @@ function parseExcelDate(value: any): string | null {
 function parseExcelTime(value: any): string | null {
   if (!value) return null;
   const str = String(value).trim();
-  // "14:00" or "14:00:00"
   const timeMatch = str.match(/(\d{1,2}:\d{2}(:\d{2})?)/);
   if (timeMatch) return timeMatch[1];
-  // Excel serial time (fraction of day)
   if (typeof value === "number" && value < 1) {
     const totalMinutes = Math.round(value * 24 * 60);
     const h = String(Math.floor(totalMinutes / 60)).padStart(2, "0");
@@ -108,7 +105,6 @@ function parseExcelTime(value: any): string | null {
 function extractTimeFromDateTime(value: any): string | null {
   if (!value) return null;
   const str = String(value).trim();
-  // Extract time from "26/03/2026 14:00:00" or similar
   const match = str.match(/\d{2}\/\d{2}\/\d{4}\s+(\d{1,2}:\d{2}(:\d{2})?)/);
   if (match) return match[1];
   return null;
@@ -124,11 +120,48 @@ function normalizeStatus(value: string): string {
   return "pendente";
 }
 
+// Get the week range (Sun-Sat) for a given date string
+function getWeekRange(dateStr: string): { start: string; end: string } | null {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + "T00:00:00");
+  if (isNaN(d.getTime())) return null;
+  const day = d.getDay();
+  const start = new Date(d);
+  start.setDate(d.getDate() - day);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  const fmt = (dt: Date) => dt.toISOString().substring(0, 10);
+  return { start: fmt(start), end: fmt(end) };
+}
+
+interface HistoricoImportacao {
+  id: string;
+  data_importacao: string;
+  arquivos: string;
+  total_registros: number;
+  inseridos: number;
+  atualizados: number;
+}
+
 const ImportacaoSegura = () => {
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ total: number; inserted: number; updated: number } | null>(null);
+  const [historico, setHistorico] = useState<HistoricoImportacao[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchHistorico();
+  }, []);
+
+  const fetchHistorico = async () => {
+    const { data } = await supabase
+      .from("historico_importacoes")
+      .select("*")
+      .order("data_importacao", { ascending: false })
+      .limit(20);
+    if (data) setHistorico(data as HistoricoImportacao[]);
+  };
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -140,9 +173,11 @@ const ImportacaoSegura = () => {
     let totalRows = 0;
     let totalInserted = 0;
     let totalUpdated = 0;
+    const fileNames: string[] = [];
 
     try {
       for (const file of Array.from(files)) {
+        fileNames.push(file.name);
         const buffer = await file.arrayBuffer();
         const wb = XLSX.read(buffer, { type: "array" });
         const ws = wb.Sheets[wb.SheetNames[0]];
@@ -157,7 +192,6 @@ const ImportacaoSegura = () => {
           return acc;
         }, {});
 
-        // Check if "Data/Hora Prazo" column exists (to extract time from it)
         const dataHoraCol = headers.find(h => h.trim().toUpperCase() === "DATA/HORA PRAZO");
         const hasHoraCol = headers.some(h => {
           const k = h.trim().toUpperCase();
@@ -168,7 +202,7 @@ const ImportacaoSegura = () => {
           const record: Record<string, any> = { status: "pendente" };
 
           for (const [excelCol, dbCol] of Object.entries(mapped)) {
-            if (dbCol === "estado_temp") continue; // skip temp fields
+            if (dbCol === "estado_temp") continue;
             let val = row[excelCol];
             if (dbCol === "data_audiencia") val = parseExcelDate(val);
             else if (dbCol === "hora_audiencia") val = parseExcelTime(val);
@@ -176,42 +210,40 @@ const ImportacaoSegura = () => {
             if (val !== "" && val !== null && val !== undefined) record[dbCol] = String(val);
           }
 
-          // If no hora_audiencia but we have Data/Hora Prazo, extract time from it
           if (!record.hora_audiencia && dataHoraCol && !hasHoraCol) {
             const extracted = extractTimeFromDateTime(row[dataHoraCol]);
             if (extracted) record.hora_audiencia = extracted;
           }
 
-          // Defaults
           if (!record.autor || record.autor === "") record.autor = "Desconhecido";
           if (!record.reu || record.reu === "") record.reu = "Desconhecido";
 
-          // Deduplication: upsert by numero_processo
+          // Deduplication scoped: match by numero_processo AND same week
           if (record.numero_processo) {
-            const { data: existing } = await supabase
+            let query = supabase
               .from("audiencias")
-              .select("id")
+              .select("id, data_audiencia")
               .eq("numero_processo", record.numero_processo);
 
+            // Scope to the same week if the record has a date
+            const weekRange = record.data_audiencia ? getWeekRange(record.data_audiencia) : null;
+            if (weekRange) {
+              query = query.gte("data_audiencia", weekRange.start).lte("data_audiencia", weekRange.end);
+            }
+
+            const { data: existing } = await query;
+
             if (existing && existing.length > 0) {
-              // Update the first match
               const { error } = await supabase
                 .from("audiencias")
                 .update(record)
                 .eq("id", existing[0].id);
               if (!error) totalUpdated++;
 
-              // Remove duplicates if any
               if (existing.length > 1) {
                 const duplicateIds = existing.slice(1).map(e => e.id);
-                await supabase
-                  .from("atribuicoes")
-                  .delete()
-                  .in("audiencia_id", duplicateIds);
-                await supabase
-                  .from("audiencias")
-                  .delete()
-                  .in("id", duplicateIds);
+                await supabase.from("atribuicoes").delete().in("audiencia_id", duplicateIds);
+                await supabase.from("audiencias").delete().in("id", duplicateIds);
               }
             } else {
               const { error } = await supabase.from("audiencias").insert(record);
@@ -227,6 +259,16 @@ const ImportacaoSegura = () => {
       }
 
       setResult({ total: totalRows, inserted: totalInserted, updated: totalUpdated });
+
+      // Log to history
+      await supabase.from("historico_importacoes").insert({
+        arquivos: fileNames.join(", "),
+        total_registros: totalRows,
+        inseridos: totalInserted,
+        atualizados: totalUpdated,
+      });
+      await fetchHistorico();
+
       toast({
         title: `Importação concluída`,
         description: `${totalInserted} inseridas, ${totalUpdated} atualizadas de ${totalRows} registros (${files.length} arquivo${files.length > 1 ? "s" : ""})`,
@@ -240,47 +282,89 @@ const ImportacaoSegura = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <FileSpreadsheet className="h-5 w-5 text-primary" />
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <FileSpreadsheet className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle>Importação de Planilha</CardTitle>
+              <CardDescription>Importe audiências a partir de arquivo .xlsx ou .xls (Seven e eLaw)</CardDescription>
+            </div>
           </div>
-          <div>
-            <CardTitle>Importação de Planilha</CardTitle>
-            <CardDescription>Importe audiências a partir de arquivo .xlsx ou .xls (Seven e eLaw)</CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".xlsx,.xls"
-          multiple
-          className="hidden"
-          onChange={handleFile}
-        />
-        <Button
-          onClick={() => fileRef.current?.click()}
-          disabled={importing}
-          size="lg"
-          className="w-full"
-        >
-          <Upload className="h-5 w-5 mr-2" />
-          {importing ? "Importando..." : "Selecionar Planilhas (Seven / eLaw)"}
-        </Button>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".xlsx,.xls"
+            multiple
+            className="hidden"
+            onChange={handleFile}
+          />
+          <Button
+            onClick={() => fileRef.current?.click()}
+            disabled={importing}
+            size="lg"
+            className="w-full"
+          >
+            <Upload className="h-5 w-5 mr-2" />
+            {importing ? "Importando..." : "Selecionar Planilhas (Seven / eLaw)"}
+          </Button>
 
-        {result && (
-          <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
-            <p className="text-sm text-green-800">
-              {result.inserted} inseridas, {result.updated} atualizadas de {result.total} registros.
-            </p>
+          {result && (
+            <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <p className="text-sm text-green-800">
+                {result.inserted} inseridas, {result.updated} atualizadas de {result.total} registros.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Histórico de Importações */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <History className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle>Histórico de Importações</CardTitle>
+              <CardDescription>Registro de todas as importações realizadas</CardDescription>
+            </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent>
+          {historico.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma importação registrada.</p>
+          ) : (
+            <div className="space-y-3">
+              {historico.map((h) => (
+                <div key={h.id} className="flex items-start gap-3 p-3 rounded-lg border bg-card">
+                  <Clock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{h.arquivos}</p>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                      <span>{format(new Date(h.data_importacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span>
+                      <span>•</span>
+                      <span>{h.inseridos} inseridas</span>
+                      <span>•</span>
+                      <span>{h.atualizados} atualizadas</span>
+                      <span>•</span>
+                      <span>{h.total_registros} total</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
