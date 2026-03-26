@@ -73,8 +73,10 @@ const SorteioAudiencias = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Alert>
-            <TriangleAlert className="h-4 w-4" />
+          <Alert className="flex items-start gap-2">
+            <span className="mt-0.5 shrink-0">
+              <TriangleAlert className="h-4 w-4 text-yellow-600" />
+            </span>
             <AlertDescription>
               Audiências presenciais serão realizadas por correspondentes sem distribuição interna.
             </AlertDescription>
