@@ -635,7 +635,7 @@ const PessoasList = () => {
 
       {/* Dialog de edição */}
       <Dialog open={!!editPessoa} onOpenChange={(open) => !open && setEditPessoa(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Pessoa</DialogTitle>
             <DialogDescription>Altere os dados e salve.</DialogDescription>
