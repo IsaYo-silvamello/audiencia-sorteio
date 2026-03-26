@@ -186,21 +186,33 @@ const ImportacaoSegura = () => {
           if (!record.autor || record.autor === "") record.autor = "Desconhecido";
           if (!record.reu || record.reu === "") record.reu = "Desconhecido";
 
-          // Deduplication: upsert by npc_dossie + numero_processo
-          if (record.npc_dossie && record.numero_processo) {
+          // Deduplication: upsert by numero_processo
+          if (record.numero_processo) {
             const { data: existing } = await supabase
               .from("audiencias")
               .select("id")
-              .eq("npc_dossie", record.npc_dossie)
-              .eq("numero_processo", record.numero_processo)
-              .maybeSingle();
+              .eq("numero_processo", record.numero_processo);
 
-            if (existing) {
+            if (existing && existing.length > 0) {
+              // Update the first match
               const { error } = await supabase
                 .from("audiencias")
                 .update(record)
-                .eq("id", existing.id);
+                .eq("id", existing[0].id);
               if (!error) totalUpdated++;
+
+              // Remove duplicates if any
+              if (existing.length > 1) {
+                const duplicateIds = existing.slice(1).map(e => e.id);
+                await supabase
+                  .from("atribuicoes")
+                  .delete()
+                  .in("audiencia_id", duplicateIds);
+                await supabase
+                  .from("audiencias")
+                  .delete()
+                  .in("id", duplicateIds);
+              }
             } else {
               const { error } = await supabase.from("audiencias").insert(record);
               if (!error) totalInserted++;
