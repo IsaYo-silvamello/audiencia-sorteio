@@ -332,21 +332,33 @@ const PessoasList = () => {
     </div>
   );
 
-  const renderCarteiraSelect = (value: string, onChange: (v: string) => void) => (
-    <div className="space-y-2">
-      <Label>Carteira (Assunto)</Label>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger>
-          <SelectValue placeholder="Selecione a carteira" />
-        </SelectTrigger>
-        <SelectContent>
-          {CARTEIRAS.map((c) => (
-            <SelectItem key={c} value={c}>{c}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
+  const renderCarteiraCheckboxes = (value: string, onChange: (v: string) => void) => {
+    const selected = value ? value.split(", ").filter(Boolean) : [];
+    return (
+      <div className="space-y-2">
+        <Label>Carteira (Assunto)</Label>
+        <div className="grid grid-cols-2 gap-2 border rounded-md p-3">
+          {CARTEIRAS.map((c) => {
+            const isChecked = selected.includes(c);
+            return (
+              <div key={c} className="flex items-center space-x-2">
+                <Checkbox
+                  checked={isChecked}
+                  onCheckedChange={(checked) => {
+                    const newSelected = checked
+                      ? [...selected, c]
+                      : selected.filter((s) => s !== c);
+                    onChange(newSelected.join(", "));
+                  }}
+                />
+                <span className="text-sm">{c}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   const renderObservacaoSelect = (value: string, onChange: (v: string) => void) => (
     <div className="space-y-2">
@@ -568,7 +580,7 @@ const PessoasList = () => {
                   {renderEquipeCheckboxes(formData.equipe, (v) => setFormData({ ...formData, equipe: v }))}
                 </>
               )}
-              {renderCarteiraSelect(formData.carteira, (v) => setFormData({ ...formData, carteira: v }))}
+              {renderCarteiraCheckboxes(formData.carteira, (v) => setFormData({ ...formData, carteira: v }))}
               {renderObservacaoSelect(formData.observacao, (v) => setFormData({ ...formData, observacao: v }))}
 
               <Button type="submit" className="w-full" disabled={loading}>
@@ -729,7 +741,7 @@ const PessoasList = () => {
               </>
             )}
             {editData.tipo === "advogado" && renderEquipeCheckboxes(editData.equipe, (v) => setEditData({ ...editData, equipe: v }))}
-            {renderCarteiraSelect(editData.carteira, (v) => setEditData({ ...editData, carteira: v }))}
+            {renderCarteiraCheckboxes(editData.carteira, (v) => setEditData({ ...editData, carteira: v }))}
             {renderObservacaoSelect(editData.observacao, (v) => setEditData({ ...editData, observacao: v }))}
           </div>
           <DialogFooter>
