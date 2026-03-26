@@ -146,6 +146,8 @@ interface HistoricoImportacao {
 
 const ImportacaoSegura = () => {
   const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importStatus, setImportStatus] = useState("");
   const [result, setResult] = useState<{ total: number; inserted: number; updated: number } | null>(null);
   const [historico, setHistorico] = useState<HistoricoImportacao[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
