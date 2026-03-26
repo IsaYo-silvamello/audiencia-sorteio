@@ -12,6 +12,7 @@ import SorteioAudiencias from "@/components/SorteioAudiencias";
 import PessoasList from "@/components/PessoasList";
 import smaartTec from "@/assets/smaart-tec.png";
 import smLab from "@/assets/sm-lab.png";
+import smaartLogo from "@/assets/smaart-logo.png";
 
 const MENU_ITEMS = [
   { key: "home", label: "Home", icon: LayoutGrid },
