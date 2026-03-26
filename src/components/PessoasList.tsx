@@ -530,15 +530,27 @@ const PessoasList = () => {
                   )}
 
                   <div className="space-y-2">
-                    <Label>Cliente</Label>
-                    <Select value={formData.equipe} onValueChange={(v) => setFormData({ ...formData, equipe: v })}>
-                      <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
-                      <SelectContent>
-                        {CLIENTES_PREPOSTO.map((c) => (
-                          <SelectItem key={c} value={c}>{c}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label>Clientes</Label>
+                    <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                      {CLIENTES_PREPOSTO.map((c) => {
+                        const selected = formData.equipe ? formData.equipe.split(", ") : [];
+                        const isChecked = selected.includes(c);
+                        return (
+                          <label key={c} className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox
+                              checked={isChecked}
+                              onCheckedChange={(checked) => {
+                                const newSelected = checked
+                                  ? [...selected, c]
+                                  : selected.filter((s) => s !== c);
+                                setFormData({ ...formData, equipe: newSelected.join(", ") });
+                              }}
+                            />
+                            {c}
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
                 </>
               )}
