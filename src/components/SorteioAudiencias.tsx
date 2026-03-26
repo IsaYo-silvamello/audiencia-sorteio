@@ -61,9 +61,9 @@ const SorteioAudiencias = () => {
               <Shuffle className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <CardTitle>Sorteio de Audiências</CardTitle>
+              <CardTitle>Distribuir Audiências</CardTitle>
               <CardDescription>
-                Distribui automaticamente respeitando carteira e limite de 3 por dia
+                A distribuição respeita:
               </CardDescription>
             </div>
           </div>
