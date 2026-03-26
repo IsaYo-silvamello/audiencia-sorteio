@@ -424,11 +424,65 @@ const ImportacaoSegura = () => {
             </Button>
 
             {result && (
-              <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                <p className="text-sm text-green-800">
-                  {result.inserted} inseridas, {result.updated} atualizadas de {result.total} registros.
-                </p>
+              <div className="rounded-xl border border-green-200 bg-green-50 p-5 space-y-4">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <h3 className="text-base font-semibold text-green-800">Importação concluída com sucesso</h3>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="flex items-center gap-2 rounded-lg bg-white/80 border border-green-100 p-3">
+                    <PlusCircle className="h-4 w-4 text-green-600 shrink-0" />
+                    <div>
+                      <p className="text-lg font-bold text-green-800">{result.inserted}</p>
+                      <p className="text-xs text-green-600">Importadas</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-lg bg-white/80 border border-green-100 p-3">
+                    <RefreshCw className="h-4 w-4 text-green-600 shrink-0" />
+                    <div>
+                      <p className="text-lg font-bold text-green-800">{result.updated}</p>
+                      <p className="text-xs text-green-600">Atualizadas</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-lg bg-white/80 border border-green-100 p-3">
+                    <FileText className="h-4 w-4 text-green-600 shrink-0" />
+                    <div>
+                      <p className="text-lg font-bold text-green-800">{result.total}</p>
+                      <p className="text-xs text-green-600">Processados</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 rounded-lg bg-white/80 border border-green-100 p-2.5 px-3">
+                  <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                  <p className="text-xs text-muted-foreground">
+                    {result.total - result.inserted - result.updated === 0
+                      ? "Nenhuma inconsistência encontrada."
+                      : `${result.total - result.inserted - result.updated} registro(s) com inconsistência.`}
+                  </p>
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => navigate("/?tab=audiencias")}
+                  >
+                    <ArrowRight className="mr-1.5 h-4 w-4" />
+                    Ir para Audiências
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => navigate("/?tab=audiencias&status=pendente")}
+                  >
+                    <AlertTriangle className="mr-1.5 h-4 w-4" />
+                    Revisar Pendentes
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
