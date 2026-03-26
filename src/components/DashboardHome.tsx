@@ -281,8 +281,8 @@ export default function DashboardHome() {
         ]).map(({ key, label, value, icon: Icon, color, bgIcon }) => (
           <Card
             key={key}
-            className="cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-primary/30"
-            onClick={() => setKpiModal(key)}
+            className={`cursor-pointer hover:shadow-md transition-shadow border-2 ${kpiModal === key ? "border-primary shadow-md" : "hover:border-primary/30"}`}
+            onClick={() => setKpiModal(kpiModal === key ? null : key)}
           >
             <CardContent className="p-5 flex items-center gap-4">
               <div className={`h-12 w-12 rounded-xl ${bgIcon} flex items-center justify-center shrink-0`}>
