@@ -1,84 +1,72 @@
 
 
-## Plano: Redesign da Dashboard orientada ao fluxo de trabalho
+## Plano: Redesign do Dashboard — Pautas Semanais + Design Acordos Silva Mello
 
-### Contexto do fluxo
+### O que muda
 
-A advogada responsável segue este fluxo:
-1. **Importa** 2 relatórios (Seven e eLaw)
-2. **Sorteia** advogados e prepostos
-3. **Visualiza** audiências organizadas por categoria
-4. **Verifica** quais pastas estão com informações faltando
+**1. Remover stepper (#1 #2 #3)** e substituir por um **seletor de pauta semanal**.
 
-O dashboard atual mostra KPIs genéricos e uma tabela por carteira que não reflete esse fluxo. A proposta é reorganizar completamente o `DashboardHome.tsx` para ser uma **central de operações** intuitiva.
+**2. Seletor de Pauta Semanal**
+- Dropdown ou lista de semanas disponíveis (baseado nas datas de audiências existentes no banco)
+- Formato: "23/03 à 27/03/2026"
+- Semana atual pré-selecionada
+- Setas para navegar entre semanas (anterior/próxima)
+- Status da semana: "Em montagem" ou "Concluída"
+- Botão "Finalizar Pauta" que:
+  - Verifica pendências (sem advogado, sem link, sem foro, etc.)
+  - Se houver pendências, mostra alerta impedindo finalização
+  - Se não houver, marca a semana como concluída
 
-### Nova estrutura do Dashboard
+**3. Visão macro da pauta selecionada**
+- KPIs da semana (total, atribuídas, pendentes)
+- Caixas organizadoras por tipo (mantidas: Conciliatória Online/Presencial, AIJ Online/Presencial, Super Endividamento)
+- Alertas de pendências da semana selecionada
+
+**4. Alinhamento visual com Acordos Silva Mello**
+- Importar fonte **Inter** via Google Fonts
+- Atualizar `index.css` com as cores do projeto Acordos:
+  - Background: `39 48% 93%` (tom creme/quente)
+  - Primary: `217 91% 60%` (azul vibrante)
+  - Sidebar: `213 66% 15%` (azul escuro #0D2740)
+  - Adicionar variáveis `--sidebar-*` do Acordos
+  - Adicionar variáveis de status e brand
+- Atualizar `tailwind.config.ts` com tokens de sidebar, brand, status e font-family Inter
+
+### Estrutura visual
 
 ```text
-┌─────────────────────────────────────────────────┐
-│  ETAPAS DO FLUXO (stepper visual)               │
-│  ① Importar → ② Sortear → ③ Revisar            │
-│  (cada etapa com status: pendente/concluída)     │
-└─────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────┐
-│  ALERTAS: pastas com informações faltando       │
-│  "12 audiências sem link"                       │
-│  "5 audiências sem advogado/preposto"           │
-│  "3 audiências presenciais sem endereço"        │
-└─────────────────────────────────────────────────┘
-
-┌──────────┬──────────┬──────────┬──────────┬──────────┐
-│ Concil.  │ Concil.  │   AIJ    │   AIJ    │  Super   │
-│ Online   │Presencial│Presencial│  Online  │Endivid.  │
-│   (14)   │   (3)    │   (5)    │   (8)    │   (2)    │
-└──────────┴──────────┴──────────┴──────────┴──────────┘
-  (cards clicáveis que expandem a lista de audiências)
-
-┌─────────────────────────────────────────────────┐
-│  RESUMO: KPIs compactos (total, pendentes,      │
-│  atribuídas, taxa realização)                   │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│  Central de Operações                            │
+│                                                  │
+│  ◄  23/03 à 27/03/2026  ►   [Finalizar Pauta]  │
+│     Status: Em montagem                          │
+├──────────────────────────────────────────────────┤
+│  ⚠ 5 aud. sem advogado  ⚠ 3 online sem link    │
+├──────────────────────────────────────────────────┤
+│  Total: 32  │ Pendentes: 5 │ Atribuídas: 27     │
+├──────────┬──────────┬──────────┬────────┬────────┤
+│ Concil.  │ Concil.  │   AIJ    │  AIJ   │ Super  │
+│ Online   │Presencial│Presencial│ Online │Endivid.│
+│  (14)    │   (3)    │   (5)    │  (8)   │  (2)   │
+└──────────┴──────────┴──────────┴────────┴────────┘
 ```
-
-### O que será feito
-
-#### 1. Reescrever `src/components/DashboardHome.tsx`
-
-**Seção: Stepper de fluxo**
-- 3 etapas visuais: Importar, Sortear, Revisar
-- Cada uma detecta automaticamente se foi feita (ex: há audiências importadas? há atribuições?)
-- Botões de ação rápida em cada etapa (link para a aba correspondente)
-
-**Seção: Caixas organizadoras por tipo de audiência**
-- 5 cards coloridos categorizando audiências pelo campo `tipo_audiencia` e `local`:
-  - **Conciliatória Online**: tipo contém "concilia" e não é presencial
-  - **Conciliatória Presencial**: tipo contém "concilia" e é presencial
-  - **AIJ Presencial**: tipo contém "instrução"/"AIJ" e é presencial
-  - **AIJ Online**: tipo contém "instrução"/"AIJ" e não é presencial
-  - **Super Endividamento**: tipo contém "endividamento"
-- Cada card mostra quantidade e, ao clicar, expande listando as audiências daquela categoria com advogado/preposto atribuído
-- Cards com cores distintas e ícones
-
-**Seção: Alertas de informações faltando**
-- Consulta audiências que não têm:
-  - Advogado ou preposto atribuído (sem registro em `atribuicoes`)
-  - Link (campo `link` vazio em audiências online)
-  - Endereço/foro (campo `foro` vazio em audiências presenciais)
-- Cada alerta mostra quantidade e permite clicar para ver a lista
-
-**Seção: KPIs compactos**
-- Manter os KPIs atuais mas em formato mais compacto (linha única)
-
-#### 2. Arquivo alterado
-- `src/components/DashboardHome.tsx` — reescrita completa
 
 ### Detalhes técnicos
 
-- A categorização usará regex no campo `tipo_audiencia` para classificar: `/concilia/i`, `/instru|aij/i`, `/endividamento/i`
-- A detecção presencial/online usa a função `isPresencial` já existente (verifica `tipo_audiencia` e `local`)
-- Os cards expandíveis usarão `Collapsible` do shadcn/ui
-- Busca todas audiências com joins em `atribuicoes → pessoas` para mostrar advogado/preposto em cada card
-- Filtro temporal dia/semana/mês mantido para as caixas organizadoras
-- O stepper verificará: etapa 1 OK se `audiencias.length > 0`, etapa 2 OK se existem registros em `atribuicoes`, etapa 3 OK se não há alertas pendentes
+**Banco de dados**: Criar tabela `pautas_semanais` para rastrear status de cada semana:
+```sql
+create table pautas_semanais (
+  id uuid primary key default gen_random_uuid(),
+  semana_inicio date not null unique,
+  semana_fim date not null,
+  status text not null default 'em_montagem', -- 'em_montagem' | 'concluida'
+  finalizada_em timestamptz,
+  created_at timestamptz default now()
+);
+```
+
+**Arquivos alterados**:
+- `src/components/DashboardHome.tsx` — reescrita: seletor semanal, botão finalizar, validação de pendências
+- `src/index.css` — cores e fonte Inter do projeto Acordos Silva Mello
+- `tailwind.config.ts` — tokens de sidebar, brand, status, font Inter
 
