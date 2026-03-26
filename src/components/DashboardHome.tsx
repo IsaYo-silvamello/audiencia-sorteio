@@ -204,6 +204,8 @@ export default function DashboardHome() {
   const totalPeriodo = audiencias.length;
   const atribuidasPeriodo = audiencias.filter((a) => a.advogado && a.preposto && (isPresencial(a) ? !!a.foro : !!a.link)).length;
   const pendentesPeriodo = totalPeriodo - atribuidasPeriodo;
+  const presenciaisPeriodo = audiencias.filter((a) => isPresencial(a)).length;
+  const virtuaisPeriodo = audiencias.filter((a) => !isPresencial(a)).length;
 
   const kpiAudiencias = useMemo(() => {
     if (kpiModal === "total") return audiencias;
