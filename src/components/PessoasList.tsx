@@ -196,6 +196,8 @@ const PessoasList = () => {
         equipe: "",
         carteira: "",
         observacao: "",
+        tipo_preposto: "",
+        horario_trabalho: "",
       });
       fetchPessoas();
     } catch (error: any) {
