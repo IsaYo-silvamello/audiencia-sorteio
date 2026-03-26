@@ -297,65 +297,68 @@ export default function DashboardHome() {
         ))}
       </div>
 
-      {/* KPI Detail Modal */}
-      <Dialog open={kpiModal !== null} onOpenChange={(open) => !open && setKpiModal(null)}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle>{kpiTitle} — {semanaLabel}</DialogTitle>
-          </DialogHeader>
-          {kpiAudiencias.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">Nenhuma audiência encontrada.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Data/Hora</TableHead>
-                  <TableHead>Autor x Réu</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Advogado</TableHead>
-                  <TableHead>Preposto</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {kpiAudiencias.map((aud) => (
-                  <TableRow key={aud.id}>
-                    <TableCell className="whitespace-nowrap text-sm">
-                      {aud.data_audiencia
-                        ? format(new Date(aud.data_audiencia + "T00:00:00"), "dd/MM", { locale: ptBR })
-                        : "—"}{" "}
-                      {aud.hora_audiencia?.slice(0, 5) || ""}
-                    </TableCell>
-                    <TableCell className="text-sm font-medium max-w-[200px] truncate">
-                      {aud.autor} x {aud.reu}
-                    </TableCell>
-                    <TableCell className="text-sm">{aud.tipo_audiencia || "—"}</TableCell>
-                    <TableCell className="text-sm">
-                      {aud.advogado ? (
-                        <span className="text-blue-700 dark:text-blue-300">{aud.advogado}</span>
-                      ) : (
-                        <span className="text-amber-600">⚠ Pendente</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {aud.preposto ? (
-                        <span className="text-emerald-700 dark:text-emerald-300">{aud.preposto}</span>
-                      ) : (
-                        <span className="text-amber-600">⚠ Pendente</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={!aud.advogado && !aud.preposto ? "outline" : "default"} className="text-xs">
-                        {aud.advogado || aud.preposto ? "Atribuída" : "Pendente"}
-                      </Badge>
-                    </TableCell>
+      {/* KPI Detail Inline */}
+      {kpiModal && kpiAudiencias.length > 0 && (
+        <Card className="border-2 border-primary/20">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardTitle className="text-base">{kpiTitle} — {semanaLabel}</CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => setKpiModal(null)} className="text-muted-foreground">
+              Fechar
+            </Button>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="overflow-auto max-h-[60vh]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data/Hora</TableHead>
+                    <TableHead>Autor x Réu</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Advogado</TableHead>
+                    <TableHead>Preposto</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </DialogContent>
-      </Dialog>
+                </TableHeader>
+                <TableBody>
+                  {kpiAudiencias.map((aud) => (
+                    <TableRow key={aud.id}>
+                      <TableCell className="whitespace-nowrap text-sm">
+                        {aud.data_audiencia
+                          ? format(new Date(aud.data_audiencia + "T00:00:00"), "dd/MM", { locale: ptBR })
+                          : "—"}{" "}
+                        {aud.hora_audiencia?.slice(0, 5) || ""}
+                      </TableCell>
+                      <TableCell className="text-sm font-medium max-w-[200px] truncate">
+                        {aud.autor} x {aud.reu}
+                      </TableCell>
+                      <TableCell className="text-sm">{aud.tipo_audiencia || "—"}</TableCell>
+                      <TableCell className="text-sm">
+                        {aud.advogado ? (
+                          <span className="text-blue-700 dark:text-blue-300">{aud.advogado}</span>
+                        ) : (
+                          <span className="text-amber-600">⚠ Pendente</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {aud.preposto ? (
+                          <span className="text-emerald-700 dark:text-emerald-300">{aud.preposto}</span>
+                        ) : (
+                          <span className="text-amber-600">⚠ Pendente</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={!aud.advogado && !aud.preposto ? "outline" : "default"} className="text-xs">
+                          {aud.advogado || aud.preposto ? "Atribuída" : "Pendente"}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Category Cards */}
       {totalPeriodo > 0 ? (
