@@ -238,11 +238,13 @@ export type Database = {
           documento: string | null
           equipe: string | null
           estado: string | null
+          horario_trabalho: string | null
           id: string
           nome: string
           observacao: string | null
           tipo: string
           tipo_advogado: string | null
+          tipo_preposto: string | null
           valor_audiencia: number | null
         }
         Insert: {
@@ -252,11 +254,13 @@ export type Database = {
           documento?: string | null
           equipe?: string | null
           estado?: string | null
+          horario_trabalho?: string | null
           id?: string
           nome: string
           observacao?: string | null
           tipo: string
           tipo_advogado?: string | null
+          tipo_preposto?: string | null
           valor_audiencia?: number | null
         }
         Update: {
@@ -266,11 +270,13 @@ export type Database = {
           documento?: string | null
           equipe?: string | null
           estado?: string | null
+          horario_trabalho?: string | null
           id?: string
           nome?: string
           observacao?: string | null
           tipo?: string
           tipo_advogado?: string | null
+          tipo_preposto?: string | null
           valor_audiencia?: number | null
         }
         Relationships: []
