@@ -542,11 +542,14 @@ const PessoasList = () => {
                   {formData.tipo_preposto === "estagiario" && (
                     <div className="space-y-2">
                       <Label>Horário de Trabalho</Label>
-                      <Input
-                        placeholder="Ex: 09:00 - 15:00"
-                        value={formData.horario_trabalho}
-                        onChange={(e) => setFormData({ ...formData, horario_trabalho: e.target.value })}
-                      />
+                      <Select value={formData.horario_trabalho} onValueChange={(v) => setFormData({ ...formData, horario_trabalho: v })}>
+                        <SelectTrigger><SelectValue placeholder="Selecione o horário" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="09:00 - 16:00">09:00 - 16:00</SelectItem>
+                          <SelectItem value="13:00 - 19:00">13:00 - 19:00</SelectItem>
+                          <SelectItem value="Integral">Integral</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   )}
 
