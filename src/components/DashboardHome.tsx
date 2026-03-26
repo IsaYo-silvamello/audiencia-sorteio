@@ -45,6 +45,14 @@ interface PautaSemanal {
 
 type Categoria = "concil_online" | "concil_presencial" | "aij_online" | "aij_presencial" | "se_online" | "se_presencial" | "acij_online" | "acij_presencial" | "outros";
 
+function isPresencial(aud: Audiencia): boolean {
+  const tipo = (aud.tipo_audiencia || "").toLowerCase();
+  const local = (aud.local || "").toLowerCase();
+  if (tipo.includes("presencial") || local.includes("presencial")) return true;
+  if (tipo.includes("online") || tipo.includes("virtual") || tipo.includes("vídeo") || tipo.includes("video") || local.includes("online") || local.includes("virtual")) return false;
+  if (aud.link) return false;
+  return true;
+}
 
 function categorizar(aud: Audiencia): Categoria {
   const tipo = (aud.tipo_audiencia || "").toLowerCase();
