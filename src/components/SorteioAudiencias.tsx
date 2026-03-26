@@ -76,9 +76,7 @@ const SorteioAudiencias = () => {
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              O sorteio respeita a <strong>carteira/equipe</strong> de cada advogado e preposto, e o limite de{" "}
-              <strong>3 audiências por pessoa por dia</strong>. Audiências presenciais são marcadas para
-              correspondente sem sortear ninguém.
+              Audiências presenciais serão realizadas por correspondentes sem distribuição interna.
             </AlertDescription>
           </Alert>
 
