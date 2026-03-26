@@ -711,11 +711,14 @@ const PessoasList = () => {
                 {editData.tipo_preposto === "estagiario" && (
                   <div className="space-y-2">
                     <Label>Horário de Trabalho</Label>
-                    <Input
-                      value={editData.horario_trabalho}
-                      placeholder="Ex: 09:00 - 15:00"
-                      onChange={(e) => setEditData({ ...editData, horario_trabalho: e.target.value })}
-                    />
+                    <Select value={editData.horario_trabalho} onValueChange={(v) => setEditData({ ...editData, horario_trabalho: v })}>
+                      <SelectTrigger><SelectValue placeholder="Selecione o horário" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="09:00 - 16:00">09:00 - 16:00</SelectItem>
+                        <SelectItem value="13:00 - 19:00">13:00 - 19:00</SelectItem>
+                        <SelectItem value="Integral">Integral</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 )}
 
