@@ -170,6 +170,13 @@ const PessoasList = () => {
         }
       }
 
+      if (formData.tipo === "preposto") {
+        dataToInsert.tipo_preposto = formData.tipo_preposto || null;
+        if (formData.tipo_preposto === "estagiario") {
+          dataToInsert.horario_trabalho = formData.horario_trabalho || null;
+        }
+      }
+
       const { error } = await supabase.from("pessoas").insert([dataToInsert]);
 
       if (error) throw error;
