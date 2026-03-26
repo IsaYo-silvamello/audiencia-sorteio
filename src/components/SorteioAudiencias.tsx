@@ -62,8 +62,12 @@ const SorteioAudiencias = () => {
             </div>
             <div>
               <CardTitle>Distribuir Audiências</CardTitle>
-              <CardDescription>
-                A distribuição respeita:
+              <CardDescription className="space-y-1">
+                <span>A distribuição respeita:</span>
+                <ul className="list-disc list-inside text-xs text-muted-foreground mt-1 space-y-0.5">
+                  <li>Carteira/equipe de cada profissional</li>
+                  <li>Limite máximo de audiências por semana (3 por pessoa)</li>
+                </ul>
               </CardDescription>
             </div>
           </div>
