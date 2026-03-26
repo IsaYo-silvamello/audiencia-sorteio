@@ -652,7 +652,44 @@ const PessoasList = () => {
                 )}
               </>
             )}
-            {renderEquipeSelect(editData.equipe, (v) => setEditData({ ...editData, equipe: v }))}
+            {editData.tipo === "preposto" && (
+              <>
+                <div className="space-y-2">
+                  <Label>Tipo de Preposto</Label>
+                  <Select value={editData.tipo_preposto} onValueChange={(v) => setEditData({ ...editData, tipo_preposto: v })}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="estagiario">Estagiário</SelectItem>
+                      <SelectItem value="assistente">Assistente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {editData.tipo_preposto === "estagiario" && (
+                  <div className="space-y-2">
+                    <Label>Horário de Trabalho</Label>
+                    <Input
+                      value={editData.horario_trabalho}
+                      placeholder="Ex: 09:00 - 15:00"
+                      onChange={(e) => setEditData({ ...editData, horario_trabalho: e.target.value })}
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label>Cliente</Label>
+                  <Select value={editData.equipe} onValueChange={(v) => setEditData({ ...editData, equipe: v })}>
+                    <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
+                    <SelectContent>
+                      {CLIENTES_PREPOSTO.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+            {editData.tipo === "advogado" && renderEquipeSelect(editData.equipe, (v) => setEditData({ ...editData, equipe: v }))}
             {renderCarteiraSelect(editData.carteira, (v) => setEditData({ ...editData, carteira: v }))}
             {renderObservacaoSelect(editData.observacao, (v) => setEditData({ ...editData, observacao: v }))}
           </div>
