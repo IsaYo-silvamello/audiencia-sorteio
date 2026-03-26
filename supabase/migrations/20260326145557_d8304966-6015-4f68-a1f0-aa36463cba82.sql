@@ -1,0 +1,1 @@
+ALTER TABLE public.historico_sorteios ADD COLUMN semana_inicio date;

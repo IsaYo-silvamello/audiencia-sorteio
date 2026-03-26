@@ -176,6 +176,7 @@ export type Database = {
           id: string
           presenciais: number
           sem_disponivel: number
+          semana_inicio: string | null
           total: number
         }
         Insert: {
@@ -186,6 +187,7 @@ export type Database = {
           id?: string
           presenciais?: number
           sem_disponivel?: number
+          semana_inicio?: string | null
           total?: number
         }
         Update: {
@@ -196,6 +198,7 @@ export type Database = {
           id?: string
           presenciais?: number
           sem_disponivel?: number
+          semana_inicio?: string | null
           total?: number
         }
         Relationships: []
