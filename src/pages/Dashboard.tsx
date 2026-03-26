@@ -10,6 +10,9 @@ import CalendarioAudiencias from "@/components/CalendarioAudiencias";
 import ImportacaoSegura from "@/components/ImportacaoSegura";
 import SorteioAudiencias from "@/components/SorteioAudiencias";
 import PessoasList from "@/components/PessoasList";
+import smaartArrow from "@/assets/smaart-arrow.png";
+import smaartTec from "@/assets/smaart-tec.png";
+import smLab from "@/assets/sm-lab.png";
 
 const MENU_ITEMS = [
   { key: "home", label: "Home", icon: LayoutGrid },
@@ -36,9 +39,7 @@ const Dashboard = () => {
       >
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border">
-          <div className="h-9 w-9 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
-            <Scale className="h-5 w-5 text-sidebar-primary-foreground" />
-          </div>
+          <img src={smaartArrow} alt="Smaart" className="h-9 w-9 shrink-0 object-contain" />
           {!collapsed && (
             <div className="overflow-hidden">
               <h1 className="text-sm font-bold text-sidebar-foreground leading-tight">Smaart Aud</h1>
@@ -65,6 +66,14 @@ const Dashboard = () => {
             </button>
           ))}
         </nav>
+
+        {/* Footer logos */}
+        {!collapsed && (
+          <div className="flex items-center justify-center gap-4 px-3 py-3 border-t border-sidebar-border">
+            <img src={smaartTec} alt="Smaart Tec" className="h-6 object-contain" />
+            <img src={smLab} alt="SM Lab" className="h-7 object-contain" />
+          </div>
+        )}
 
         {/* Collapse toggle */}
         <button
