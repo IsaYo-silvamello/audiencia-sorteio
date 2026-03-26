@@ -38,12 +38,12 @@ const Dashboard = () => {
         )}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border">
-          <img src={smaartLogo} alt="Smaart Aud" className="h-9 w-9 shrink-0 object-contain" />
+        <div className="flex items-center gap-2.5 px-5 py-6 border-b border-sidebar-border/60 bg-sidebar-accent/20 shadow-[0_1px_3px_0_hsl(var(--sidebar-border)/0.15)]">
+          <img src={smaartLogo} alt="Smaart Aud" className="h-10 w-10 shrink-0 object-contain rounded-lg" />
           {!collapsed && (
-            <div className="overflow-hidden">
-              <h1 className="text-sm font-bold text-sidebar-foreground leading-tight">Smaart Aud</h1>
-              <p className="text-[11px] text-sidebar-accent-foreground/60">Gestão de Pautas</p>
+            <div className="overflow-hidden min-w-0">
+              <h1 className="text-[15px] font-semibold text-sidebar-foreground leading-snug tracking-tight">Smaart Aud</h1>
+              <p className="text-[10.5px] text-sidebar-foreground/55 leading-tight mt-0.5">Gestão de Pautas</p>
             </div>
           )}
         </div>
