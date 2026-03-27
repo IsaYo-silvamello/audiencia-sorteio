@@ -291,7 +291,7 @@ const CalendarioAudiencias = () => {
                 </div>
               )}
 
-              <ScrollArea className="max-h-[500px]">
+              <div className="max-h-[60vh] overflow-y-auto pr-2">
                 <div className="space-y-2">
                   {selectedDayAuds
                     .sort((a, b) => (a.hora_audiencia || "").localeCompare(b.hora_audiencia || ""))
@@ -326,7 +326,7 @@ const CalendarioAudiencias = () => {
                       </div>
                     ))}
                 </div>
-              </ScrollArea>
+              </div>
             </CardContent>
           </Card>
         </div>
