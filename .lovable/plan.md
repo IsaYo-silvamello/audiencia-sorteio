@@ -1,31 +1,21 @@
 
 
-## Plano: Limpar banco inteiro e reimportar
+## Plan: Remove "Importar Planilha" button from Audiências tab
 
-### Situação atual
-- 335 registros no banco, sendo 61 sem NPC e ~40 duplicatas (registros antigos sem NPC + novos com NPC do mesmo processo)
-- Deveria ter ~277 (205 + 72 das planilhas)
+### What changes
+In `src/components/AudienciasList.tsx`, remove the file import functionality (the "Importar Planilha" button and its associated logic) from the Audiências tab. The audiências data will only come from what was imported via the "Importar Pauta" tab (the `ImportacaoSegura` component).
 
-### Ação
+### Technical details
 
-**1. Migração SQL — limpar todas as tabelas relacionadas**
+**File: `src/components/AudienciasList.tsx`**
 
-```sql
-DELETE FROM atribuicoes;
-DELETE FROM audiencias;
-DELETE FROM historico_importacoes;
-DELETE FROM pautas_semanais;
-```
+1. **Remove the "Importar Planilha" button** (lines 683-697) — the hidden file input and the button that triggers it
+2. **Remove unused state and refs**: `importing`, `showConfirm`, `pendingRows`, `fileInputRef`
+3. **Remove the `handleFileSelect` function** (lines 308-349) — file reading and parsing logic
+4. **Remove the `handleConfirmImport` function** (lines 351-469) — import + auto-sorteio logic
+5. **Remove the confirmation AlertDialog** that asks to confirm import (search for `showConfirm` usage in the JSX)
+6. **Remove unused imports**: `Upload`, `useRef`, `XLSX` (if only used by import), `HEADER_MAP`, `parseExcelDate`, `parseExcelTime`, helper functions only used by import (`isPresencial`, `extrairUF`, `getEquipeCorrespondente`, `CODIGO_ESTADO`)
+7. **Keep**: the "Extrair Planilha" (export) button, search, edit, delete, and all display logic
 
-Isso zera o banco completamente. Nenhuma estrutura é alterada, apenas os dados são removidos.
-
-**2. Nenhuma mudança de código**
-
-O `ImportacaoSegura.tsx` já está com a deduplicação por `npc_dossie`. Com o banco limpo, ao reimportar as 2 planilhas:
-- Planilha 1 (205 registros) → 205 inserts
-- Planilha 2 (72 registros) → se tiver NPCs em comum com a planilha 1, faz update; senão, insert
-- Total final: ~277 registros, todos com NPC e tipo_audiencia preenchidos
-
-### Resultado
-Após reimportar, o dashboard exibirá o total correto com NPC e categorias espelhados da planilha.
+The audiências list will remain purely a read/display/edit view, showing only data that was imported through the dedicated "Importar Pauta" tab.
 
