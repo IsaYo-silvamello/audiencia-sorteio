@@ -1,10 +1,10 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChevronLeft, ChevronRight, Monitor, MapPin, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Monitor, MapPin, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { format, addWeeks, subWeeks, startOfWeek, endOfWeek, eachDayOfInterval, parseISO, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -68,6 +68,17 @@ const CalendarioAudiencias = () => {
   const [audiencias, setAudiencias] = useState<Audiencia[]>([]);
   const [semanaRef, setSemanaRef] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const detailRef = useRef<HTMLDivElement>(null);
+
+  const handleSelectDay = useCallback((key: string) => {
+    const isAlreadySelected = selectedDay === key;
+    setSelectedDay(isAlreadySelected ? null : key);
+    if (!isAlreadySelected) {
+      setTimeout(() => {
+        detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [selectedDay]);
 
   useEffect(() => {
     const fetchAudiencias = async () => {
@@ -156,7 +167,7 @@ const CalendarioAudiencias = () => {
           return (
             <button
               key={key}
-              onClick={() => setSelectedDay(isSelected ? null : key)}
+              onClick={() => handleSelectDay(key)}
               className={`
                 text-left rounded-lg border transition-all duration-200 min-h-[140px] p-2.5 flex flex-col gap-1.5
                 hover:shadow-md hover:scale-[1.01] cursor-pointer
@@ -231,79 +242,94 @@ const CalendarioAudiencias = () => {
         })}
       </div>
 
+      {/* Floating scroll button */}
+      {selectedDay && selectedDayAuds.length > 0 && (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            className="animate-bounce shadow-md"
+            onClick={() => detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          >
+            <ChevronDown className="h-4 w-4 mr-1" />
+            Ver {selectedDayAuds.length} audiência{selectedDayAuds.length > 1 ? "s" : ""} do dia
+          </Button>
+        </div>
+      )}
+
       {/* Selected Day Detail Panel */}
       {selectedDay && selectedDayAuds.length > 0 && (
-        <Card className="border-primary/20">
-          <CardContent className="p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-foreground">
-                  {format(parseISO(selectedDay), "EEEE, d 'de' MMMM", { locale: ptBR })}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {selectedDayAuds.length} audiência{selectedDayAuds.length > 1 ? "s" : ""} ·{" "}
-                  {selectedDayAuds.filter((a) => !isPresencial(a)).length} virtuais ·{" "}
-                  {selectedDayAuds.filter((a) => isPresencial(a)).length} presenciais
-                </p>
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => setSelectedDay(null)}>Fechar</Button>
-            </div>
-
-            {/* Distribuição por responsável */}
-            {responsaveisDoDia.length > 0 && (
-              <div>
-                <h4 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
-                  <Users className="h-3 w-3" /> Distribuição por Responsável
-                </h4>
-                <div className="flex flex-wrap gap-1.5">
-                  {responsaveisDoDia.map(([nome, count]) => (
-                    <Badge key={nome} variant="secondary" className="text-xs">
-                      {nome.split(" ").slice(0, 2).join(" ")} <span className="ml-1 font-bold">{count}</span>
-                    </Badge>
-                  ))}
+        <div ref={detailRef}>
+          <Card className="border-primary/20">
+            <CardContent className="p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-foreground">
+                    {format(parseISO(selectedDay), "EEEE, d 'de' MMMM", { locale: ptBR })}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedDayAuds.length} audiência{selectedDayAuds.length > 1 ? "s" : ""} ·{" "}
+                    {selectedDayAuds.filter((a) => !isPresencial(a)).length} virtuais ·{" "}
+                    {selectedDayAuds.filter((a) => isPresencial(a)).length} presenciais
+                  </p>
                 </div>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedDay(null)}>Fechar</Button>
               </div>
-            )}
 
-            {/* Lista de audiências */}
-            <ScrollArea className="max-h-[400px]">
-              <div className="space-y-2">
-                {selectedDayAuds
-                  .sort((a, b) => (a.hora_audiencia || "").localeCompare(b.hora_audiencia || ""))
-                  .map((a) => (
-                    <div key={a.id} className="flex items-start gap-3 p-3 rounded-md border bg-card hover:bg-accent/30 transition-colors">
-                      <div className="text-sm font-mono font-semibold text-primary min-w-[50px]">
-                        {a.hora_audiencia || "—"}
-                      </div>
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <p className="text-sm font-medium truncate">{a.autor} × {a.reu}</p>
-                        <div className="flex flex-wrap gap-1.5 text-[11px]">
-                          <Badge variant="outline" className={`${statusColor[a.status] || ""} text-[10px]`}>
-                            {a.status}
-                          </Badge>
-                          {a.tipo_audiencia && (
-                            <Badge variant="outline" className="text-[10px]">{a.tipo_audiencia}</Badge>
-                          )}
-                          {isPresencial(a) ? (
-                            <span className="flex items-center gap-0.5 text-orange-600"><MapPin className="h-3 w-3" />Presencial</span>
-                          ) : (
-                            <span className="flex items-center gap-0.5 text-blue-600"><Monitor className="h-3 w-3" />Virtual</span>
+              {responsaveisDoDia.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
+                    <Users className="h-3 w-3" /> Distribuição por Responsável
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {responsaveisDoDia.map(([nome, count]) => (
+                      <Badge key={nome} variant="secondary" className="text-xs">
+                        {nome.split(" ").slice(0, 2).join(" ")} <span className="ml-1 font-bold">{count}</span>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <ScrollArea className="max-h-[500px]">
+                <div className="space-y-2">
+                  {selectedDayAuds
+                    .sort((a, b) => (a.hora_audiencia || "").localeCompare(b.hora_audiencia || ""))
+                    .map((a) => (
+                      <div key={a.id} className="flex items-start gap-3 p-3 rounded-md border bg-card hover:bg-accent/30 transition-colors">
+                        <div className="text-sm font-mono font-semibold text-primary min-w-[50px]">
+                          {a.hora_audiencia || "—"}
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <p className="text-sm font-medium truncate">{a.autor} × {a.reu}</p>
+                          <div className="flex flex-wrap gap-1.5 text-[11px]">
+                            <Badge variant="outline" className={`${statusColor[a.status] || ""} text-[10px]`}>
+                              {a.status}
+                            </Badge>
+                            {a.tipo_audiencia && (
+                              <Badge variant="outline" className="text-[10px]">{a.tipo_audiencia}</Badge>
+                            )}
+                            {isPresencial(a) ? (
+                              <span className="flex items-center gap-0.5 text-orange-600"><MapPin className="h-3 w-3" />Presencial</span>
+                            ) : (
+                              <span className="flex items-center gap-0.5 text-blue-600"><Monitor className="h-3 w-3" />Virtual</span>
+                            )}
+                          </div>
+                          {a.numero_processo && (
+                            <p className="text-[11px] text-muted-foreground truncate">{a.numero_processo}</p>
                           )}
                         </div>
-                        {a.numero_processo && (
-                          <p className="text-[11px] text-muted-foreground truncate">{a.numero_processo}</p>
-                        )}
+                        <div className="text-right text-[11px] text-muted-foreground space-y-0.5">
+                          <p className="truncate max-w-[120px]">{getResponsavel(a)}</p>
+                          {a.carteira && <p className="truncate max-w-[120px]">{a.carteira}</p>}
+                        </div>
                       </div>
-                      <div className="text-right text-[11px] text-muted-foreground space-y-0.5">
-                        <p className="truncate max-w-[120px]">{getResponsavel(a)}</p>
-                        {a.carteira && <p className="truncate max-w-[120px]">{a.carteira}</p>}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+                    ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );
