@@ -169,7 +169,7 @@ interface HistoricoImportacao {
   atualizados: number;
 }
 
-const ImportacaoSegura = () => {
+const ImportacaoSegura = ({ onImportComplete }: { onImportComplete?: () => void }) => {
   const navigate = useNavigate();
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
@@ -396,6 +396,8 @@ const ImportacaoSegura = () => {
         title: "✅ Importação concluída",
         description: `${totalRows} registros processados com sucesso.`,
       });
+
+      onImportComplete?.();
     } catch (err: any) {
       console.error("Erro na importação:", err);
       toast({

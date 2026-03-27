@@ -29,6 +29,11 @@ const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "home");
   const [collapsed, setCollapsed] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleImportComplete = () => {
+    setRefreshKey((k) => k + 1);
+  };
 
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -101,18 +106,18 @@ const Dashboard = () => {
       {/* Main content */}
       <main className="flex-1 overflow-y-scroll h-screen">
         <div className="max-w-[1400px] mx-auto px-6 py-6">
-          {activeTab === "home" && <DashboardHome />}
+          {activeTab === "home" && <DashboardHome key={refreshKey} />}
           {activeTab === "importacao" && (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Importação de Planilha</h2>
-              <ImportacaoSegura />
+              <ImportacaoSegura onImportComplete={handleImportComplete} />
             </div>
           )}
-          {activeTab === "sorteio" && <SorteioAudiencias />}
-          {activeTab === "audiencias" && <AudienciasList />}
-          {activeTab === "calendario" && <CalendarioAudiencias />}
-          {activeTab === "equipe" && <PessoasList />}
-          {activeTab === "admin" && <AdminPanel />}
+          {activeTab === "sorteio" && <SorteioAudiencias key={refreshKey} />}
+          {activeTab === "audiencias" && <AudienciasList key={refreshKey} />}
+          {activeTab === "calendario" && <CalendarioAudiencias key={refreshKey} />}
+          {activeTab === "equipe" && <PessoasList key={refreshKey} />}
+          {activeTab === "admin" && <AdminPanel key={refreshKey} />}
         </div>
       </main>
     </div>
