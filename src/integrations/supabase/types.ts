@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      afastamentos: {
+        Row: {
+          created_at: string | null
+          data_fim: string
+          data_inicio: string
+          horario_especial_fim: string | null
+          horario_especial_inicio: string | null
+          id: string
+          pessoa_id: string
+          tipo: string
+        }
+        Insert: {
+          created_at?: string | null
+          data_fim: string
+          data_inicio: string
+          horario_especial_fim?: string | null
+          horario_especial_inicio?: string | null
+          id?: string
+          pessoa_id: string
+          tipo: string
+        }
+        Update: {
+          created_at?: string | null
+          data_fim?: string
+          data_inicio?: string
+          horario_especial_fim?: string | null
+          horario_especial_inicio?: string | null
+          id?: string
+          pessoa_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "afastamentos_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "pessoas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       atribuicoes: {
         Row: {
           audiencia_id: string
