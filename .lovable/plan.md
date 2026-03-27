@@ -1,26 +1,63 @@
 
 
-## Plano: Corrigir semanas não aparecendo para sorteio
+## Plano: Corrigir Distribuição — Contagem e Atribuição de Colaboradores
 
-### Problema
+### Problema 1: Contagem incorreta (190 vs 124)
 
-A função `carregarSemanas` em `src/hooks/useSorteio.ts` busca todas as audiências (independente do status) e marca a semana como "sorteada" se já existe entrada em `historico_sorteios`. Assim, semanas com audiências pendentes não aparecem para sortear se já houve um sorteio anterior naquela semana.
+Dados reais no banco: **252 pendentes** na semana 16-20/Mar. Dessas, 74 são presenciais e 23 fora do expediente. O número "190 virtuais" que aparece na tela não bate porque a UI mostra o total de audiências sem separar presenciais — o resultado só aparece após o sorteio ser executado.
+
+### Problema 2 (PRINCIPAL): Não está atribuindo colaboradores
+
+A causa raiz é a **lógica de correspondência carteira ↔ equipe**. Dados atuais:
+
+**Carteiras das audiências** (pendentes, virtuais, dentro do expediente):
+- MELI: 85, CREDICARD: 17, Cobrança DCR-PF: 19, Fraudes e Ilícitos: 8, Vivo: 5, etc.
+
+**Equipes dos advogados** (40 ativos):
+- ITAÚ: 25, MELI: 3, BRADESCO: 3, VIVO: 4, GERAL: 2, ELETROBRÁS: 2, etc.
+
+**Equipes dos prepostos** (38 ativos):
+- **31 sem equipe (NULL)**, ITAÚ: 4, GERAL: 3
+
+O código atual faz:
+```
+se carteira existe E equipe existe → exige match exato
+se equipe é NULL → pessoa é EXCLUÍDA (nunca é sorteada)
+se carteira é vazia → só pessoas sem equipe entram
+```
+
+Resultado: **31 prepostos nunca são sorteados** (equipe NULL), **25 advogados ITAÚ nunca são sorteados** (nenhuma audiência tem carteira "ITAÚ"), e carteiras como CREDICARD/Cobrança DCR-PF não têm nenhum profissional correspondente.
 
 ### Solução
 
-Alterar `carregarSemanas` para:
+Corrigir a lógica de filtro em `useSorteio.ts`:
 
-1. Buscar apenas audiências com `status = 'pendente'` ao montar a lista de semanas disponíveis
-2. Mostrar a semana como disponível se ainda tiver audiências pendentes, mesmo que já tenha sido sorteada antes
-3. Manter a indicação de semanas já sorteadas separadamente (para histórico), mas sem bloquear novo sorteio
+1. **Prepostos sem equipe** → disponíveis para **qualquer carteira** (são prepostos genéricos)
+2. **Advogados/prepostos com equipe "GERAL"** → disponíveis para qualquer carteira
+3. **Correspondência flexível** → se a equipe da pessoa **está contida** na carteira da audiência ou vice-versa (ex: equipe "ITAÚ" casa com carteiras que contenham "ITAÚ", como "JV ITAU BMG")
+4. **Sem carteira na audiência** → qualquer pessoa pode ser sorteada
+5. **Sem equipe na pessoa** → pode ser sorteada para qualquer carteira
 
 ### Arquivo impactado
 
-`src/hooks/useSorteio.ts` — apenas a função `carregarSemanas` (linhas ~106-151)
+`src/hooks/useSorteio.ts` — apenas a função de filtro de advogados/prepostos disponíveis (linhas 268-279)
 
 ### Detalhes técnicos
 
-- Adicionar `.eq("status", "pendente")` na query de audiências dentro de `carregarSemanas`
-- Mudar a lógica de `sorteada`: marcar como sorteada apenas se não há mais audiências pendentes naquela semana
-- Manter o campo `dataSorteio` para exibir quando foi o último sorteio, mas sem impedir novo sorteio
+Substituir a lógica de match por:
+
+```typescript
+function matchCarteiraEquipe(carteira: string | null, equipe: string | null): boolean {
+  if (!carteira || !equipe) return true; // sem carteira ou sem equipe → disponível
+  const c = carteira.toUpperCase();
+  const e = equipe.toUpperCase();
+  if (e === "GERAL") return true; // equipe geral atende tudo
+  // Match flexível: equipe contida na carteira ou carteira contida na equipe
+  // Também suporta equipes com múltiplos valores separados por vírgula
+  const equipes = e.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+  return equipes.some(eq => c.includes(eq) || eq.includes(c));
+}
+```
+
+E atualizar os filtros de `advDisponiveis` e `prepDisponiveis` para usar essa função.
 
