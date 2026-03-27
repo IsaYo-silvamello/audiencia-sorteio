@@ -915,24 +915,6 @@ const AudienciasList = () => {
         </div>
       )}
 
-      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar importação</AlertDialogTitle>
-            <AlertDialogDescription>
-              Isso irá <strong>excluir todas as audiências e atribuições existentes</strong> e importar{" "}
-              <strong>{pendingRows.length}</strong> novas audiências da planilha. Deseja continuar?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmImport}>
-              Importar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Dialog de edição de audiência */}
       <Dialog open={!!editAudiencia} onOpenChange={(open) => !open && setEditAudiencia(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
