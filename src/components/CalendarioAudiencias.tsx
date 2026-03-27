@@ -35,8 +35,9 @@ const statusColor: Record<string, string> = {
 };
 
 function isPresencial(a: Audiencia): boolean {
+  const tipo = (a.tipo_audiencia || "").toLowerCase();
   const local = (a.local || "").toLowerCase();
-  return local.includes("presencial") || local.includes("físic") || (!local.includes("virtual") && !local.includes("telepresencial") && !local.includes("vídeo") && !local.includes("video") && !local.includes("remot") && local.length > 0);
+  return tipo.includes("presencial") || local.includes("presencial");
 }
 
 function getResponsavel(a: Audiencia): string {
