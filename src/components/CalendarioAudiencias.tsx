@@ -242,11 +242,25 @@ const CalendarioAudiencias = () => {
         })}
       </div>
 
+      {/* Floating scroll button */}
+      {selectedDay && selectedDayAuds.length > 0 && (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            className="animate-bounce shadow-md"
+            onClick={() => detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          >
+            <ChevronDown className="h-4 w-4 mr-1" />
+            Ver {selectedDayAuds.length} audiência{selectedDayAuds.length > 1 ? "s" : ""} do dia
+          </Button>
+        </div>
+      )}
+
       {/* Selected Day Detail Panel */}
       {selectedDay && selectedDayAuds.length > 0 && (
+        <div ref={detailRef}>
         <Card className="border-primary/20">
-          <CardContent className="p-4 space-y-4">
-            <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-semibold text-foreground">
                   {format(parseISO(selectedDay), "EEEE, d 'de' MMMM", { locale: ptBR })}
