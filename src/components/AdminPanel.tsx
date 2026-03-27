@@ -6,6 +6,7 @@ import NovaAudienciaForm from "@/components/NovaAudienciaForm";
 import AdminPessoasManager from "@/components/AdminPessoasManager";
 import AdminLogin from "@/components/AdminLogin";
 
+// Admin panel component
 const AdminPanel = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
