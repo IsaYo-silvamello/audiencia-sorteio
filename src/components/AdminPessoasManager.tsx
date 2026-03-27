@@ -286,7 +286,7 @@ const AdminPessoasManager = () => {
 
       <div className="space-y-2">
         <Label>Carteira (Assunto)</Label>
-        <div className="grid grid-cols-3 gap-2 border rounded-md p-3 max-h-36 overflow-y-auto">
+        <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto">
           {CARTEIRAS.map((c) => {
             const sel = data.carteira ? data.carteira.split(", ").filter(Boolean) : [];
             return (
