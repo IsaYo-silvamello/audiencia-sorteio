@@ -453,6 +453,23 @@ const AudienciasList = () => {
                   </div>
                 </div>
               </CardHeader>
+              {isPresencial(audiencia) && (
+                <div className="mx-6 mb-2 flex items-start gap-2 p-3 rounded-lg bg-yellow-100 border border-yellow-400 dark:bg-yellow-900/30 dark:border-yellow-600">
+                  <MapPin className="h-5 w-5 text-yellow-700 dark:text-yellow-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold text-yellow-800 dark:text-yellow-300">
+                      Audiência Presencial — Necessário contratação de correspondente
+                    </p>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-400 mt-1">
+                      {(() => {
+                        const uf = extrairUF(audiencia.numero_processo);
+                        const equipe = getEquipeCorrespondente(uf);
+                        return `Contatar: ${equipe}${uf ? ` (UF: ${uf})` : " (UF não identificada)"}`;
+                      })()}
+                    </p>
+                  </div>
+                </div>
+              )}
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {audiencia.autor && (
