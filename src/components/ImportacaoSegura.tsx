@@ -169,7 +169,7 @@ interface HistoricoImportacao {
   atualizados: number;
 }
 
-const ImportacaoSegura = () => {
+const ImportacaoSegura = ({ onImportComplete }: { onImportComplete?: () => void }) => {
   const navigate = useNavigate();
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
