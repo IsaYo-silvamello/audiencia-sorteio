@@ -258,11 +258,13 @@ export function useSorteio() {
         // Filtrar por carteira/equipe e limite diário
         const carteira = aud.carteira?.toUpperCase() || "";
         const advDisponiveis = advogados.filter((a) => {
+          if (!pessoaDisponivel(a.id, diaAudiencia, aud.hora_audiencia || null)) return false;
           if (getContagemDia(a.id, diaAudiencia) >= LIMITE_DIARIO) return false;
           if (carteira && a.equipe) return a.equipe.toUpperCase() === carteira;
           return !carteira;
         });
         const prepDisponiveis = prepostos.filter((p) => {
+          if (!pessoaDisponivel(p.id, diaAudiencia, aud.hora_audiencia || null)) return false;
           if (getContagemDia(p.id, diaAudiencia) >= LIMITE_DIARIO) return false;
           if (carteira && p.equipe) return p.equipe.toUpperCase() === carteira;
           return !carteira;
