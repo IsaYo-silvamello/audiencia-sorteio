@@ -70,6 +70,31 @@ function isPresencial(audiencia: { tipo_audiencia?: string | null; local?: strin
   return tipo.includes("presencial") || local.includes("presencial");
 }
 
+const CODIGO_ESTADO: Record<string, string> = {
+  "8.01": "AC", "8.02": "AL", "8.03": "AP", "8.04": "AM", "8.05": "BA",
+  "8.06": "CE", "8.07": "DF", "8.08": "ES", "8.09": "GO", "8.10": "MA",
+  "8.11": "MT", "8.12": "MS", "8.13": "MG", "8.14": "PA", "8.15": "PB",
+  "8.16": "PR", "8.17": "PE", "8.18": "PI", "8.19": "RJ", "8.20": "RN",
+  "8.21": "RS", "8.22": "RO", "8.23": "RR", "8.24": "SC", "8.25": "SE",
+  "8.26": "SP", "8.27": "TO",
+};
+
+function extrairUF(numero_processo: string | null): string | null {
+  if (!numero_processo) return null;
+  const match = numero_processo.match(/8\.(\d{2})/);
+  if (match) {
+    const codigo = `8.${match[1]}`;
+    return CODIGO_ESTADO[codigo] || null;
+  }
+  return null;
+}
+
+function getEquipeCorrespondente(uf: string | null): string {
+  if (uf === "RJ") return "Equipe MANA";
+  if (uf === "MG") return "Equipe Mariana Goes";
+  return "Equipe Thiago";
+}
+
 const AudienciasList = () => {
   const [audiencias, setAudiencias] = useState<Audiencia[]>([]);
   const [filteredAudiencias, setFilteredAudiencias] = useState<Audiencia[]>([]);
@@ -428,6 +453,23 @@ const AudienciasList = () => {
                   </div>
                 </div>
               </CardHeader>
+              {isPresencial(audiencia) && (
+                <div className="mx-6 mb-2 flex items-start gap-2 p-3 rounded-lg bg-yellow-100 border border-yellow-400 dark:bg-yellow-900/30 dark:border-yellow-600">
+                  <MapPin className="h-5 w-5 text-yellow-700 dark:text-yellow-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold text-yellow-800 dark:text-yellow-300">
+                      Audiência Presencial — Necessário contratação de correspondente
+                    </p>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-400 mt-1">
+                      {(() => {
+                        const uf = extrairUF(audiencia.numero_processo);
+                        const equipe = getEquipeCorrespondente(uf);
+                        return `Contatar: ${equipe}${uf ? ` (UF: ${uf})` : " (UF não identificada)"}`;
+                      })()}
+                    </p>
+                  </div>
+                </div>
+              )}
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {audiencia.autor && (
