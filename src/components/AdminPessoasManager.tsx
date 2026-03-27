@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Users, Trash2, Pencil, Scale, Briefcase } from "lucide-react";
+import { UserPlus, Users, Trash2, Pencil, Scale, Briefcase, CalendarOff, GraduationCap, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -19,6 +19,11 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface Pessoa {
   id: string;
@@ -34,6 +39,16 @@ interface Pessoa {
   observacao?: string | null;
   tipo_preposto?: string | null;
   horario_trabalho?: string | null;
+}
+
+interface Afastamento {
+  id: string;
+  pessoa_id: string;
+  tipo: string;
+  data_inicio: string;
+  data_fim: string;
+  horario_especial_inicio: string | null;
+  horario_especial_fim: string | null;
 }
 
 const CLIENTES_PREPOSTO = [
@@ -70,6 +85,17 @@ const AdminPessoasManager = () => {
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
+  // Afastamentos state
+  const [afastamentosPessoa, setAfastamentosPessoa] = useState<Pessoa | null>(null);
+  const [afastamentos, setAfastamentos] = useState<Afastamento[]>([]);
+  const [allAfastamentos, setAllAfastamentos] = useState<Afastamento[]>([]);
+  const [afastTipo, setAfastTipo] = useState<string>("ferias");
+  const [afastDataInicio, setAfastDataInicio] = useState<Date | undefined>();
+  const [afastDataFim, setAfastDataFim] = useState<Date | undefined>();
+  const [afastHoraInicio, setAfastHoraInicio] = useState("08:00");
+  const [afastHoraFim, setAfastHoraFim] = useState("14:00");
+  const [savingAfast, setSavingAfast] = useState(false);
+
   const fetchPessoas = async () => {
     try {
       const { data, error } = await supabase.from("pessoas").select("*").eq("ativo", true).order("nome");
@@ -82,7 +108,17 @@ const AdminPessoasManager = () => {
     }
   };
 
-  useEffect(() => { fetchPessoas(); }, []);
+  const fetchAllAfastamentos = async () => {
+    const today = new Date().toISOString().split("T")[0];
+    const { data } = await supabase
+      .from("afastamentos")
+      .select("*")
+      .gte("data_fim", today)
+      .order("data_inicio");
+    setAllAfastamentos((data as any[]) || []);
+  };
+
+  useEffect(() => { fetchPessoas(); fetchAllAfastamentos(); }, []);
 
   const advogados = pessoas.filter((p) => p.tipo === "advogado");
   const prepostos = pessoas.filter((p) => p.tipo === "preposto");
@@ -170,6 +206,60 @@ const AdminPessoasManager = () => {
       observacao: pessoa.observacao || "", tipo_preposto: pessoa.tipo_preposto || "",
       horario_trabalho: pessoa.horario_trabalho || "",
     });
+  };
+
+  // Afastamentos handlers
+  const openAfastamentos = async (pessoa: Pessoa) => {
+    setAfastamentosPessoa(pessoa);
+    setAfastTipo("ferias");
+    setAfastDataInicio(undefined);
+    setAfastDataFim(undefined);
+    setAfastHoraInicio("08:00");
+    setAfastHoraFim("14:00");
+    const { data } = await supabase
+      .from("afastamentos")
+      .select("*")
+      .eq("pessoa_id", pessoa.id)
+      .gte("data_fim", new Date().toISOString().split("T")[0])
+      .order("data_inicio");
+    setAfastamentos((data as any[]) || []);
+  };
+
+  const handleAddAfastamento = async () => {
+    if (!afastamentosPessoa || !afastDataInicio || !afastDataFim) return;
+    setSavingAfast(true);
+    try {
+      const payload: any = {
+        pessoa_id: afastamentosPessoa.id,
+        tipo: afastTipo,
+        data_inicio: format(afastDataInicio, "yyyy-MM-dd"),
+        data_fim: format(afastDataFim, "yyyy-MM-dd"),
+      };
+      if (afastTipo === "provas") {
+        payload.horario_especial_inicio = afastHoraInicio;
+        payload.horario_especial_fim = afastHoraFim;
+      }
+      const { error } = await supabase.from("afastamentos").insert([payload]);
+      if (error) throw error;
+      toast({ title: afastTipo === "ferias" ? "Férias registradas" : "Época de provas registrada" });
+      openAfastamentos(afastamentosPessoa);
+      fetchAllAfastamentos();
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erro", description: error.message });
+    } finally {
+      setSavingAfast(false);
+    }
+  };
+
+  const handleDeleteAfastamento = async (id: string) => {
+    await supabase.from("afastamentos").delete().eq("id", id);
+    if (afastamentosPessoa) openAfastamentos(afastamentosPessoa);
+    fetchAllAfastamentos();
+  };
+
+  const getAfastamentoAtivo = (pessoaId: string): Afastamento | null => {
+    const today = new Date().toISOString().split("T")[0];
+    return allAfastamentos.find((a) => a.pessoa_id === pessoaId && a.data_inicio <= today && a.data_fim >= today) || null;
   };
 
   // Shared form fields renderer
@@ -313,42 +403,62 @@ const AdminPessoasManager = () => {
     </div>
   );
 
-  const renderPessoaRow = (pessoa: Pessoa) => (
-    <div key={pessoa.id} className="flex items-start justify-between p-4 rounded-lg border bg-card hover:bg-accent/30 transition-colors">
-      <div className="space-y-1">
-        <span className="font-medium text-foreground">{pessoa.nome}</span>
-        <div className="flex flex-wrap gap-1.5 mt-1">
-          {pessoa.documento && <Badge variant="outline" className="text-[11px]">OAB/CPF: {pessoa.documento}</Badge>}
-          {pessoa.tipo_advogado && <Badge variant="outline" className="text-[11px] capitalize">{pessoa.tipo_advogado}</Badge>}
-          {pessoa.tipo_preposto && (
-            <Badge variant="outline" className="text-[11px] capitalize">
-              {pessoa.tipo_preposto === "estagiario" ? "Estagiário" : "Assistente"}
-            </Badge>
-          )}
-          {pessoa.tipo_preposto === "estagiario" && pessoa.horario_trabalho && (
-            <Badge variant="secondary" className="text-[11px]">{pessoa.horario_trabalho}</Badge>
-          )}
-          {pessoa.tipo_advogado === "externo" && pessoa.estado && (
-            <Badge variant="secondary" className="text-[11px]">{pessoa.estado}</Badge>
-          )}
-          {pessoa.tipo_advogado === "externo" && pessoa.valor_audiencia && (
-            <Badge variant="secondary" className="text-[11px]">R$ {pessoa.valor_audiencia.toFixed(2)}</Badge>
-          )}
-          {pessoa.observacao && <Badge variant="secondary" className="text-[11px]">{pessoa.observacao}</Badge>}
+  const renderPessoaRow = (pessoa: Pessoa) => {
+    const afastAtivo = getAfastamentoAtivo(pessoa.id);
+    return (
+      <div key={pessoa.id} className="flex items-start justify-between p-4 rounded-lg border bg-card hover:bg-accent/30 transition-colors">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-foreground">{pessoa.nome}</span>
+            {afastAtivo && (
+              <Badge
+                variant={afastAtivo.tipo === "ferias" ? "destructive" : "secondary"}
+                className="text-[10px] gap-1"
+              >
+                {afastAtivo.tipo === "ferias" ? (
+                  <><CalendarOff className="h-3 w-3" /> Férias</>
+                ) : (
+                  <><GraduationCap className="h-3 w-3" /> Provas</>
+                )}
+              </Badge>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {pessoa.documento && <Badge variant="outline" className="text-[11px]">OAB/CPF: {pessoa.documento}</Badge>}
+            {pessoa.tipo_advogado && <Badge variant="outline" className="text-[11px] capitalize">{pessoa.tipo_advogado}</Badge>}
+            {pessoa.tipo_preposto && (
+              <Badge variant="outline" className="text-[11px] capitalize">
+                {pessoa.tipo_preposto === "estagiario" ? "Estagiário" : "Assistente"}
+              </Badge>
+            )}
+            {pessoa.tipo_preposto === "estagiario" && pessoa.horario_trabalho && (
+              <Badge variant="secondary" className="text-[11px]">{pessoa.horario_trabalho}</Badge>
+            )}
+            {pessoa.tipo_advogado === "externo" && pessoa.estado && (
+              <Badge variant="secondary" className="text-[11px]">{pessoa.estado}</Badge>
+            )}
+            {pessoa.tipo_advogado === "externo" && pessoa.valor_audiencia && (
+              <Badge variant="secondary" className="text-[11px]">R$ {pessoa.valor_audiencia.toFixed(2)}</Badge>
+            )}
+            {pessoa.observacao && <Badge variant="secondary" className="text-[11px]">{pessoa.observacao}</Badge>}
+          </div>
+          {pessoa.equipe && <p className="text-xs text-muted-foreground mt-1"><span className="font-medium text-primary">Cliente:</span> {pessoa.equipe}</p>}
+          {pessoa.carteira && <p className="text-xs text-muted-foreground"><span className="font-medium">Carteira:</span> {pessoa.carteira}</p>}
         </div>
-        {pessoa.equipe && <p className="text-xs text-muted-foreground mt-1"><span className="font-medium text-primary">Cliente:</span> {pessoa.equipe}</p>}
-        {pessoa.carteira && <p className="text-xs text-muted-foreground"><span className="font-medium">Carteira:</span> {pessoa.carteira}</p>}
+        <div className="flex items-center gap-1 shrink-0">
+          <Button variant="ghost" size="icon" onClick={() => openAfastamentos(pessoa)} title="Férias / Provas">
+            <CalendarOff className="h-4 w-4 text-muted-foreground" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => openEdit(pessoa)}>
+            <Pencil className="h-4 w-4 text-muted-foreground" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(pessoa)}>
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </div>
       </div>
-      <div className="flex items-center gap-1 shrink-0">
-        <Button variant="ghost" size="icon" onClick={() => openEdit(pessoa)}>
-          <Pencil className="h-4 w-4 text-muted-foreground" />
-        </Button>
-        <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(pessoa)}>
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </Button>
-      </div>
-    </div>
-  );
+    );
+  };
 
   if (loading) return <p className="text-center text-muted-foreground py-8">Carregando...</p>;
 
@@ -423,6 +533,107 @@ const AdminPessoasManager = () => {
               {saving ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Afastamentos (Férias / Provas) */}
+      <Dialog open={!!afastamentosPessoa} onOpenChange={(open) => !open && setAfastamentosPessoa(null)}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Férias e Época de Provas</DialogTitle>
+            <DialogDescription>{afastamentosPessoa?.nome}</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Tipo */}
+            <div className="space-y-2">
+              <Label>Tipo de Afastamento</Label>
+              <Select value={afastTipo} onValueChange={setAfastTipo}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ferias">Férias</SelectItem>
+                  <SelectItem value="provas">Época de Provas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Datas */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Data Início</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !afastDataInicio && "text-muted-foreground")}>
+                      {afastDataInicio ? format(afastDataInicio, "dd/MM/yyyy") : "Selecione"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={afastDataInicio} onSelect={setAfastDataInicio} locale={ptBR} className="p-3 pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-2">
+                <Label>Data Fim</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !afastDataFim && "text-muted-foreground")}>
+                      {afastDataFim ? format(afastDataFim, "dd/MM/yyyy") : "Selecione"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={afastDataFim} onSelect={setAfastDataFim} locale={ptBR} className="p-3 pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            {/* Horário especial (só para provas) */}
+            {afastTipo === "provas" && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Expediente Início</Label>
+                  <Input type="time" value={afastHoraInicio} onChange={(e) => setAfastHoraInicio(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Expediente Fim</Label>
+                  <Input type="time" value={afastHoraFim} onChange={(e) => setAfastHoraFim(e.target.value)} />
+                </div>
+              </div>
+            )}
+
+            <Button onClick={handleAddAfastamento} disabled={savingAfast || !afastDataInicio || !afastDataFim} className="w-full">
+              {savingAfast ? "Salvando..." : afastTipo === "ferias" ? "Registrar Férias" : "Registrar Época de Provas"}
+            </Button>
+
+            {/* Lista de afastamentos ativos/futuros */}
+            {afastamentos.length > 0 && (
+              <div className="space-y-2 pt-2 border-t">
+                <Label className="text-sm font-medium">Períodos registrados</Label>
+                {afastamentos.map((af) => (
+                  <div key={af.id} className="flex items-center justify-between p-3 rounded-md border bg-muted/30">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={af.tipo === "ferias" ? "destructive" : "secondary"} className="text-[10px]">
+                          {af.tipo === "ferias" ? "Férias" : "Provas"}
+                        </Badge>
+                        <span className="text-sm font-medium">
+                          {format(new Date(af.data_inicio + "T00:00:00"), "dd/MM/yyyy")} — {format(new Date(af.data_fim + "T00:00:00"), "dd/MM/yyyy")}
+                        </span>
+                      </div>
+                      {af.tipo === "provas" && af.horario_especial_inicio && (
+                        <p className="text-xs text-muted-foreground">
+                          Expediente: {af.horario_especial_inicio?.slice(0, 5)} — {af.horario_especial_fim?.slice(0, 5)}
+                        </p>
+                      )}
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => handleDeleteAfastamento(af.id)}>
+                      <X className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 

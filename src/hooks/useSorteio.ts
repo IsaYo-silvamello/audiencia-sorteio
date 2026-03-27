@@ -172,6 +172,32 @@ export function useSorteio() {
         .eq("ativo", true);
       if (errPes) throw errPes;
 
+      // Buscar afastamentos ativos para filtrar pessoas
+      const { data: afastamentos } = await supabase
+        .from("afastamentos")
+        .select("*")
+        .lte("data_inicio", semanaFim)
+        .gte("data_fim", semanaInicio);
+
+      const afastamentosAtivos = afastamentos || [];
+
+      // Função para verificar se pessoa está disponível para uma audiência
+      const pessoaDisponivel = (pessoaId: string, dataAudiencia: string, horaAudiencia: string | null) => {
+        const afasts = afastamentosAtivos.filter((a: any) => a.pessoa_id === pessoaId);
+        for (const af of afasts) {
+          if (dataAudiencia >= af.data_inicio && dataAudiencia <= af.data_fim) {
+            if (af.tipo === "ferias") return false;
+            if (af.tipo === "provas" && horaAudiencia && af.horario_especial_inicio && af.horario_especial_fim) {
+              // Só disponível se audiência está dentro do horário especial
+              if (horaAudiencia < af.horario_especial_inicio || horaAudiencia > af.horario_especial_fim) {
+                return false;
+              }
+            }
+          }
+        }
+        return true;
+      };
+
       const advogados = (pessoas || []).filter((p) => p.tipo === "advogado");
       const prepostos = (pessoas || []).filter((p) => p.tipo === "preposto");
 
@@ -232,11 +258,13 @@ export function useSorteio() {
         // Filtrar por carteira/equipe e limite diário
         const carteira = aud.carteira?.toUpperCase() || "";
         const advDisponiveis = advogados.filter((a) => {
+          if (!pessoaDisponivel(a.id, diaAudiencia, aud.hora_audiencia || null)) return false;
           if (getContagemDia(a.id, diaAudiencia) >= LIMITE_DIARIO) return false;
           if (carteira && a.equipe) return a.equipe.toUpperCase() === carteira;
           return !carteira;
         });
         const prepDisponiveis = prepostos.filter((p) => {
+          if (!pessoaDisponivel(p.id, diaAudiencia, aud.hora_audiencia || null)) return false;
           if (getContagemDia(p.id, diaAudiencia) >= LIMITE_DIARIO) return false;
           if (carteira && p.equipe) return p.equipe.toUpperCase() === carteira;
           return !carteira;
