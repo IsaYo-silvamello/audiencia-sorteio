@@ -206,27 +206,24 @@ export function useSorteio() {
       const advogados = (pessoas || []).filter((p) => p.tipo === "advogado");
       const prepostos = (pessoas || []).filter((p) => p.tipo === "preposto");
 
-      // Buscar atribuições existentes da semana para contar por dia
+      // Buscar atribuições existentes da semana para contagem semanal
       const { data: atribuicoes } = await supabase
         .from("atribuicoes")
-        .select("*, audiencias!inner(data_audiencia)")
+        .select("*")
         .eq("semana_inicio", semanaInicio);
 
-      // Contagem por pessoa por dia
-      const contagemDiaria: Record<string, Record<string, number>> = {};
+      // Contagem semanal por pessoa
+      const contagemSemanal: Record<string, number> = {};
       (atribuicoes || []).forEach((a: any) => {
-        const dia = a.audiencias?.data_audiencia || "unknown";
-        if (!contagemDiaria[a.pessoa_id]) contagemDiaria[a.pessoa_id] = {};
-        contagemDiaria[a.pessoa_id][dia] = (contagemDiaria[a.pessoa_id][dia] || 0) + 1;
+        contagemSemanal[a.pessoa_id] = (contagemSemanal[a.pessoa_id] || 0) + 1;
       });
 
-      const getContagemDia = (pessoaId: string, dia: string) => {
-        return contagemDiaria[pessoaId]?.[dia] || 0;
+      const getContagemSemanal = (pessoaId: string) => {
+        return contagemSemanal[pessoaId] || 0;
       };
 
-      const addContagem = (pessoaId: string, dia: string) => {
-        if (!contagemDiaria[pessoaId]) contagemDiaria[pessoaId] = {};
-        contagemDiaria[pessoaId][dia] = (contagemDiaria[pessoaId][dia] || 0) + 1;
+      const addContagem = (pessoaId: string) => {
+        contagemSemanal[pessoaId] = (contagemSemanal[pessoaId] || 0) + 1;
       };
 
       const itens: ResultadoItem[] = [];
@@ -237,11 +234,16 @@ export function useSorteio() {
       for (const aud of audiencias) {
         const presencial = isPresencial(aud);
         const diaAudiencia = aud.data_audiencia || "unknown";
+        const horaAud = aud.hora_audiencia || null;
 
-        if (presencial) {
+        // Presencial OU fora do expediente → correspondente externo
+        if (presencial || foraDoExpediente(horaAud)) {
           presenciaisCount++;
           const uf = extrairUF(aud.numero_processo);
           const equipe = getEquipeCorrespondente(uf);
+          const razao = presencial
+            ? `Audiência presencial — encaminhar para correspondente (${equipe})`
+            : `Audiência fora do expediente (${horaAud}) — encaminhar para correspondente (${equipe})`;
           itens.push({
             audienciaId: aud.id,
             processo: aud.numero_processo || aud.autor,
@@ -249,7 +251,7 @@ export function useSorteio() {
             presencial: true,
             advogado: null,
             preposto: null,
-            motivo: `Audiência presencial — encaminhar para correspondente (${equipe})`,
+            motivo: razao,
             equipeRecomendada: equipe,
           });
 
@@ -260,23 +262,26 @@ export function useSorteio() {
           continue;
         }
 
-        // Filtrar por carteira/equipe e limite diário
+        // Filtrar por carteira/equipe e limite semanal
         const carteira = aud.carteira?.toUpperCase() || "";
         const advDisponiveis = advogados.filter((a) => {
-          if (!pessoaDisponivel(a.id, diaAudiencia, aud.hora_audiencia || null)) return false;
-          if (getContagemDia(a.id, diaAudiencia) >= LIMITE_DIARIO) return false;
+          if (!pessoaDisponivel(a.id, diaAudiencia, horaAud)) return false;
+          if (getContagemSemanal(a.id) >= LIMITE_SEMANAL) return false;
           if (carteira && a.equipe) return a.equipe.toUpperCase() === carteira;
           return !carteira;
         });
         const prepDisponiveis = prepostos.filter((p) => {
-          if (!pessoaDisponivel(p.id, diaAudiencia, aud.hora_audiencia || null)) return false;
-          if (getContagemDia(p.id, diaAudiencia) >= LIMITE_DIARIO) return false;
+          if (!pessoaDisponivel(p.id, diaAudiencia, horaAud)) return false;
+          if (getContagemSemanal(p.id) >= LIMITE_SEMANAL) return false;
           if (carteira && p.equipe) return p.equipe.toUpperCase() === carteira;
           return !carteira;
         });
 
-        if (advDisponiveis.length === 0) {
+        // Sem advogado E sem preposto
+        if (advDisponiveis.length === 0 && prepDisponiveis.length === 0) {
           semDisponivel++;
+          const uf = extrairUF(aud.numero_processo);
+          const equipe = getEquipeCorrespondente(uf);
           itens.push({
             audienciaId: aud.id,
             processo: aud.numero_processo || aud.autor,
@@ -284,38 +289,50 @@ export function useSorteio() {
             presencial: false,
             advogado: null,
             preposto: null,
-            motivo: `Nenhum advogado disponível para carteira "${carteira || "geral"}" no dia ${diaAudiencia}`,
+            motivo: `Nenhum advogado ou preposto disponível — encaminhar para correspondente (${equipe})`,
+            equipeRecomendada: equipe,
           });
           continue;
         }
 
-        const advSorteado = advDisponiveis[Math.floor(Math.random() * advDisponiveis.length)];
+        const advSorteado = advDisponiveis.length > 0
+          ? advDisponiveis[Math.floor(Math.random() * advDisponiveis.length)]
+          : null;
         const prepSorteado = prepDisponiveis.length > 0
           ? prepDisponiveis[Math.floor(Math.random() * prepDisponiveis.length)]
           : null;
 
-        addContagem(advSorteado.id, diaAudiencia);
-        if (prepSorteado) addContagem(prepSorteado.id, diaAudiencia);
+        if (advSorteado) addContagem(advSorteado.id);
+        if (prepSorteado) addContagem(prepSorteado.id);
 
         // Salvar atribuições
-        const atribBatch = [
-          { audiencia_id: aud.id, pessoa_id: advSorteado.id, semana_inicio: semanaInicio },
-        ];
-        if (prepSorteado) {
-          atribBatch.push({ audiencia_id: aud.id, pessoa_id: prepSorteado.id, semana_inicio: semanaInicio });
-        }
-        await supabase.from("atribuicoes").insert(atribBatch);
+        const atribBatch: { audiencia_id: string; pessoa_id: string; semana_inicio: string }[] = [];
+        if (advSorteado) atribBatch.push({ audiencia_id: aud.id, pessoa_id: advSorteado.id, semana_inicio: semanaInicio });
+        if (prepSorteado) atribBatch.push({ audiencia_id: aud.id, pessoa_id: prepSorteado.id, semana_inicio: semanaInicio });
+        if (atribBatch.length > 0) await supabase.from("atribuicoes").insert(atribBatch);
+
+        // Montar observações sobre correspondente necessário
+        let obsCorrespondente = "";
+        const uf = extrairUF(aud.numero_processo);
+        const equipe = getEquipeCorrespondente(uf);
+        if (!advSorteado) obsCorrespondente += `Sem advogado disponível — correspondente necessário (${equipe}). `;
+        if (!prepSorteado) obsCorrespondente += `Sem preposto disponível — correspondente necessário (${equipe}). `;
 
         await supabase
           .from("audiencias")
           .update({
             status: "atribuida",
-            advogado: advSorteado.nome,
+            advogado: advSorteado?.nome || null,
             preposto: prepSorteado?.nome || null,
+            observacoes: obsCorrespondente || null,
           })
           .eq("id", aud.id);
 
         atribuidas++;
+        let motivo = `Sorteado entre ${advDisponiveis.length} advogado(s) e ${prepDisponiveis.length} preposto(s)`;
+        if (!advSorteado) motivo = `Sem advogado disponível — correspondente necessário (${equipe}). Preposto: ${prepSorteado?.nome}`;
+        if (!prepSorteado) motivo = `Sem preposto disponível — correspondente necessário (${equipe}). Advogado: ${advSorteado?.nome}`;
+
         itens.push({
           audienciaId: aud.id,
           processo: aud.numero_processo || aud.autor,
