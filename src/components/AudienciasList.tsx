@@ -393,7 +393,7 @@ const AudienciasList = () => {
       ) : (
         <div className="grid gap-4">
           {filteredAudiencias.map((audiencia) => (
-            <Card key={audiencia.id} className="hover:shadow-lg transition-shadow">
+            <Card key={audiencia.id} className={`hover:shadow-lg transition-shadow ${isPresencial(audiencia) ? "border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-600" : ""}`}>
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="space-y-2 flex-1">
