@@ -566,6 +566,25 @@ const ImportacaoSegura = () => {
           </CardContent>
         </Card>
       </div>
+
+      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar nova importação</AlertDialogTitle>
+            <AlertDialogDescription>
+              Ao importar uma nova planilha, <strong>todas as audiências e atribuições existentes serão removidas</strong> e substituídas pelos dados da nova planilha. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setPendingFiles(null); if (fileRef.current) fileRef.current.value = ""; }}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmImport}>
+              Sim, importar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
