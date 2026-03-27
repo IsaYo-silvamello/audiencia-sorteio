@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, FileText, Users, Search, Trash2, ExternalLink, Upload, MapPin, Pencil, Download } from "lucide-react";
+import { Calendar, Clock, FileText, Users, Search, Trash2, ExternalLink, MapPin, Pencil, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -16,16 +16,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -35,7 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import * as XLSX from "xlsx";
+
 import XLSXStyle from "xlsx-js-style";
 
 interface Audiencia {
@@ -74,117 +64,10 @@ interface Audiencia {
   }>;
 }
 
-const HEADER_MAP: Record<string, string> = {
-  "ID": "id_planilha",
-  "NPC/DOSSIÊ": "npc_dossie",
-  "NPC/DOSSIE": "npc_dossie",
-  "AUTOR": "autor",
-  "PROCESSO": "numero_processo",
-  "DATA": "data_audiencia",
-  "HORÁRIO": "hora_audiencia",
-  "HORARIO": "hora_audiencia",
-  "TIPO DA AUDIENCIA": "tipo_audiencia",
-  "TIPO DA AUDIÊNCIA": "tipo_audiencia",
-  "FORO": "foro",
-  "COMARCA": "comarca",
-  "ASSUNTO": "assunto",
-  "CARTEIRA": "carteira",
-  "STATUS": "status",
-  "LOCAL": "local",
-  "ADVOGADO": "advogado",
-  "PREPOSTO": "preposto",
-  "ESTRATÉGIA": "estrategia",
-  "ESTRATEGIA": "estrategia",
-  "ESTRATÉGIA SMAA": "estrategia_smaa",
-  "ESTRATEGIA SMAA": "estrategia_smaa",
-  "CLIENTE (RÉU)": "reu",
-  "CLIENTE (REU)": "reu",
-  "ADV RESPONSAVEL": "adv_responsavel",
-  "ADV RESPONSÁVEL": "adv_responsavel",
-  "OBSERVAÇÕES": "observacoes",
-  "OBSERVACOES": "observacoes",
-  "DOCUMENTAÇÃO": "documentacao",
-  "DOCUMENTACAO": "documentacao",
-  "LINK": "link",
-  "ADV DO AUTOR": "adv_do_autor",
-  "CONTATO CARTORIO": "contato_cartorio",
-  "CONTATO CARTÓRIO": "contato_cartorio",
-};
-
-const CODIGO_ESTADO: Record<string, string> = {
-  "8.01": "AC", "8.02": "AL", "8.03": "AP", "8.04": "AM", "8.05": "BA",
-  "8.06": "CE", "8.07": "DF", "8.08": "ES", "8.09": "GO", "8.10": "MA",
-  "8.11": "MT", "8.12": "MS", "8.13": "MG", "8.14": "PA", "8.15": "PB",
-  "8.16": "PR", "8.17": "PE", "8.18": "PI", "8.19": "RJ", "8.20": "RN",
-  "8.21": "RS", "8.22": "RO", "8.23": "RR", "8.24": "SC", "8.25": "SE",
-  "8.26": "SP", "8.27": "TO",
-};
-
 function isPresencial(audiencia: { tipo_audiencia?: string | null; local?: string | null }): boolean {
   const tipo = (audiencia.tipo_audiencia || "").toLowerCase();
   const local = (audiencia.local || "").toLowerCase();
   return tipo.includes("presencial") || local.includes("presencial");
-}
-
-function extrairUF(numero_processo: string | null): string | null {
-  if (!numero_processo) return null;
-  const match = numero_processo.match(/8\.(\d{2})/);
-  if (match) {
-    const codigo = `8.${match[1]}`;
-    return CODIGO_ESTADO[codigo] || null;
-  }
-  return null;
-}
-
-function getEquipeCorrespondente(uf: string | null): string {
-  if (uf === "RJ") return "Equipe MANA";
-  if (uf === "MG") return "Equipe Mariana Goes";
-  return "Equipe Thiago";
-}
-
-function parseExcelDate(value: any): string | null {
-  if (!value) return null;
-  if (typeof value === "number") {
-    const date = XLSX.SSF.parse_date_code(value);
-    if (date) {
-      const m = String(date.m).padStart(2, "0");
-      const d = String(date.d).padStart(2, "0");
-      return `${date.y}-${m}-${d}`;
-    }
-  }
-  const s = String(value).trim();
-  if (/^\d+$/.test(s) && Number(s) > 1000) {
-    const date = XLSX.SSF.parse_date_code(Number(s));
-    if (date) {
-      const m = String(date.m).padStart(2, "0");
-      const d = String(date.d).padStart(2, "0");
-      return `${date.y}-${m}-${d}`;
-    }
-  }
-  const match = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-  if (match) return `${match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}`;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  return s || null;
-}
-
-function parseExcelTime(value: any): string | null {
-  if (!value) return null;
-  if (typeof value === "number") {
-    const totalSeconds = Math.round(value * 86400);
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-  }
-  const s = String(value).trim();
-  if (/^\d*\.\d+$/.test(s)) {
-    const totalSeconds = Math.round(Number(s) * 86400);
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-  }
-  const match = s.match(/(\d{1,2}):(\d{2})/);
-  if (match) return `${match[1].padStart(2, "0")}:${match[2]}`;
-  return s || null;
 }
 
 const AudienciasList = () => {
@@ -193,13 +76,9 @@ const AudienciasList = () => {
   const [loading, setLoading] = useState(true);
   const [searchNome, setSearchNome] = useState("");
   const [searchDoc, setSearchDoc] = useState("");
-  const [importing, setImporting] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [pendingRows, setPendingRows] = useState<any[]>([]);
   const [editAudiencia, setEditAudiencia] = useState<Audiencia | null>(null);
   const [editAudData, setEditAudData] = useState<Record<string, string>>({});
   const [savingEdit, setSavingEdit] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const fetchAudiencias = async () => {
@@ -304,216 +183,6 @@ const AudienciasList = () => {
       supabase.removeChannel(channel);
     };
   }, []);
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer, { type: "array" });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-
-      if (jsonData.length === 0) {
-        toast({ variant: "destructive", title: "Planilha vazia", description: "Nenhuma linha encontrada." });
-        return;
-      }
-
-      const headers = Object.keys(jsonData[0] as any);
-      const mapped = jsonData.map((row: any) => {
-        const obj: any = {};
-        headers.forEach((h) => {
-          const key = HEADER_MAP[h.toUpperCase().trim()];
-          if (key) {
-            obj[key] = row[h] !== undefined && row[h] !== "" ? String(row[h]) : null;
-          }
-        });
-        if (obj.data_audiencia) obj.data_audiencia = parseExcelDate(obj.data_audiencia);
-        if (obj.hora_audiencia) obj.hora_audiencia = parseExcelTime(obj.hora_audiencia);
-        const ALLOWED_STATUSES = ['pendente', 'atribuida', 'realizada'];
-        const rawStatus = (obj.status || '').toString().toLowerCase().trim();
-        obj.status = ALLOWED_STATUSES.includes(rawStatus) ? rawStatus : 'pendente';
-        if (!obj.autor) obj.autor = "";
-        if (!obj.reu) obj.reu = "";
-        return obj;
-      });
-
-      setPendingRows(mapped);
-      setShowConfirm(true);
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Erro ao ler planilha", description: err.message });
-    } finally {
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
-
-  const handleConfirmImport = async () => {
-    setShowConfirm(false);
-    setImporting(true);
-    try {
-      await supabase.from("atribuicoes").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("audiencias").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-
-      const batchSize = 100;
-      let inserted = 0;
-      for (let i = 0; i < pendingRows.length; i += batchSize) {
-        const batch = pendingRows.slice(i, i + batchSize);
-        const { error } = await supabase.from("audiencias").insert(batch as any);
-        if (error) throw error;
-        inserted += batch.length;
-      }
-
-      // === SORTEIO AUTOMÁTICO PÓS-IMPORTAÇÃO ===
-      const { data: audienciasImportadas, error: fetchErr } = await supabase
-        .from("audiencias")
-        .select("*")
-        .eq("status", "pendente");
-      if (fetchErr) throw fetchErr;
-
-      const { data: pessoas, error: pessoasErr } = await supabase
-        .from("pessoas")
-        .select("*")
-        .eq("ativo", true);
-      if (pessoasErr) throw pessoasErr;
-
-      const advogados = pessoas?.filter((p) => p.tipo === "advogado") || [];
-      const prepostos = pessoas?.filter((p) => p.tipo === "preposto") || [];
-
-      const hoje = new Date();
-      const diaSemana = hoje.getDay();
-      const inicioSemana = new Date(hoje);
-      inicioSemana.setDate(hoje.getDate() - diaSemana);
-      inicioSemana.setHours(0, 0, 0, 0);
-      const semanaInicioStr = inicioSemana.toISOString().split("T")[0];
-
-      const contagemPorPessoa = new Map<string, number>();
-
-      const atribuicoes: Array<{ audiencia_id: string; pessoa_id: string; semana_inicio: string }> = [];
-      const audienciasPresenciais: Array<{ id: string; observacoes: string }> = [];
-      const audienciasAtribuidas: string[] = [];
-      let presenciaisCount = 0;
-
-      for (const audiencia of (audienciasImportadas || [])) {
-        if (isPresencial(audiencia)) {
-          presenciaisCount++;
-          const uf = extrairUF(audiencia.numero_processo);
-          const equipe = getEquipeCorrespondente(uf);
-          const ufLabel = uf ? ` (${uf})` : "";
-          const obs = `⚠️ PRESENCIAL${ufLabel} - Contatar ${equipe} para contratação de correspondente`;
-          audienciasPresenciais.push({ id: audiencia.id, observacoes: obs });
-        } else {
-          // Regra de equipe: filtrar por carteira
-          const carteiraAudiencia = (audiencia.carteira || "").trim().toUpperCase();
-          
-          const advDisponiveis = advogados.filter((p) => {
-            const equipe = ((p as any).equipe || "").trim().toUpperCase();
-            if (!carteiraAudiencia || !equipe) return true;
-            return equipe === carteiraAudiencia;
-          }).filter((p) => (contagemPorPessoa.get(p.id) || 0) < 2);
-
-          const prepDisponiveis = prepostos.filter((p) => {
-            const equipe = ((p as any).equipe || "").trim().toUpperCase();
-            if (!carteiraAudiencia || !equipe) return true;
-            return equipe === carteiraAudiencia;
-          }).filter((p) => (contagemPorPessoa.get(p.id) || 0) < 2);
-
-          if (advDisponiveis.length > 0 && prepDisponiveis.length > 0) {
-            const advSorteado = advDisponiveis[Math.floor(Math.random() * advDisponiveis.length)];
-            const prepSorteado = prepDisponiveis[Math.floor(Math.random() * prepDisponiveis.length)];
-
-            atribuicoes.push(
-              { audiencia_id: audiencia.id, pessoa_id: advSorteado.id, semana_inicio: semanaInicioStr },
-              { audiencia_id: audiencia.id, pessoa_id: prepSorteado.id, semana_inicio: semanaInicioStr }
-            );
-            audienciasAtribuidas.push(audiencia.id);
-
-            contagemPorPessoa.set(advSorteado.id, (contagemPorPessoa.get(advSorteado.id) || 0) + 1);
-            contagemPorPessoa.set(prepSorteado.id, (contagemPorPessoa.get(prepSorteado.id) || 0) + 1);
-          }
-        }
-      }
-
-      if (atribuicoes.length > 0) {
-        const { error: insertErr } = await supabase.from("atribuicoes").insert(atribuicoes);
-        if (insertErr) throw insertErr;
-      }
-
-      if (audienciasAtribuidas.length > 0) {
-        const { error: updateErr } = await supabase
-          .from("audiencias")
-          .update({ status: "atribuida" })
-          .in("id", audienciasAtribuidas);
-        if (updateErr) throw updateErr;
-      }
-
-      for (const ap of audienciasPresenciais) {
-        await supabase
-          .from("audiencias")
-          .update({ observacoes: ap.observacoes })
-          .eq("id", ap.id);
-      }
-
-      const msgs: string[] = [`${inserted} audiências importadas.`];
-      if (audienciasAtribuidas.length > 0) msgs.push(`${audienciasAtribuidas.length} sorteadas (advogado + preposto).`);
-      if (presenciaisCount > 0) msgs.push(`${presenciaisCount} presenciais (correspondente).`);
-
-      toast({ title: "Importação e sorteio concluídos", description: msgs.join(" ") });
-      setPendingRows([]);
-      fetchAudiencias();
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Erro na importação", description: err.message });
-    } finally {
-      setImporting(false);
-    }
-  };
-
-  const handleStatusChange = async (id: string, newStatus: string) => {
-    try {
-      const { error } = await supabase
-        .from("audiencias")
-        .update({ status: newStatus })
-        .eq("id", id);
-      if (error) throw error;
-
-      toast({
-        title: "Status atualizado",
-        description: `Audiência marcada como ${newStatus === "realizada" ? "Realizado" : "Não Realizado"}.`,
-      });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao atualizar status",
-        description: error.message,
-      });
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      await supabase.from("atribuicoes").delete().eq("audiencia_id", id);
-      
-      const { error } = await supabase
-        .from("audiencias")
-        .delete()
-        .eq("id", id);
-      if (error) throw error;
-
-      setAudiencias((prev) => prev.filter((aud) => aud.id !== id));
-
-      toast({
-        title: "Audiência excluída",
-        description: "A audiência foi removida com sucesso.",
-      });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao excluir audiência",
-        description: error.message,
-      });
-    }
-  };
-
 
   const openEditAudiencia = (aud: Audiencia) => {
     setEditAudiencia(aud);
@@ -679,21 +348,6 @@ const AudienciasList = () => {
           >
             <Download className="h-4 w-4 mr-2" />
             Extrair Planilha
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            className="hidden"
-            onChange={handleFileSelect}
-          />
-          <Button
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importing}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            {importing ? "Importando..." : "Importar Planilha"}
           </Button>
           <Badge variant="outline" className="text-lg px-4 py-2">
             {filteredAudiencias.length} audiências
@@ -943,24 +597,6 @@ const AudienciasList = () => {
           ))}
         </div>
       )}
-
-      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar importação</AlertDialogTitle>
-            <AlertDialogDescription>
-              Isso irá <strong>excluir todas as audiências e atribuições existentes</strong> e importar{" "}
-              <strong>{pendingRows.length}</strong> novas audiências da planilha. Deseja continuar?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmImport}>
-              Importar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Dialog de edição de audiência */}
       <Dialog open={!!editAudiencia} onOpenChange={(open) => !open && setEditAudiencia(null)}>
