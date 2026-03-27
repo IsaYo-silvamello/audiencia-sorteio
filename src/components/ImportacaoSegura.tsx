@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -204,8 +205,19 @@ const ImportacaoSegura = () => {
     }
   };
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [pendingFiles, setPendingFiles] = useState<FileList | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setPendingFiles(files);
+    setShowConfirm(true);
+  };
+
+  const handleConfirmImport = async () => {
+    setShowConfirm(false);
+    const files = pendingFiles;
     if (!files || files.length === 0) return;
 
     setImporting(true);
@@ -431,7 +443,7 @@ const ImportacaoSegura = () => {
           </CardHeader>
 
           <CardContent className="space-y-4">
-            <input ref={fileRef} type="file" accept=".xlsx,.xls" multiple className="hidden" onChange={handleFile} />
+            <input ref={fileRef} type="file" accept=".xlsx,.xls" multiple className="hidden" onChange={handleFileSelect} />
 
             <Button onClick={() => fileRef.current?.click()} disabled={importing} size="lg" className="w-full">
               <Upload className="mr-2 h-5 w-5" />
@@ -554,6 +566,25 @@ const ImportacaoSegura = () => {
           </CardContent>
         </Card>
       </div>
+
+      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar nova importação</AlertDialogTitle>
+            <AlertDialogDescription>
+              Ao importar uma nova planilha, <strong>todas as audiências e atribuições existentes serão removidas</strong> e substituídas pelos dados da nova planilha. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setPendingFiles(null); if (fileRef.current) fileRef.current.value = ""; }}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmImport}>
+              Sim, importar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
