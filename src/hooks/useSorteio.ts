@@ -108,6 +108,7 @@ export function useSorteio() {
     const { data: audiencias } = await supabase
       .from("audiencias")
       .select("data_audiencia")
+      .eq("status", "pendente")
       .not("data_audiencia", "is", null);
 
     if (!audiencias || audiencias.length === 0) {
@@ -115,7 +116,7 @@ export function useSorteio() {
       return;
     }
 
-    // Group by week
+    // Group by week (only pending)
     const semanasMap: Record<string, number> = {};
     for (const aud of audiencias) {
       if (!aud.data_audiencia) continue;
