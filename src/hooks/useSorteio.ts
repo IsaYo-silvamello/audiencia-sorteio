@@ -2,6 +2,15 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+function matchCarteiraEquipe(carteira: string | null, equipe: string | null): boolean {
+  if (!carteira || !equipe) return true;
+  const c = carteira.toUpperCase();
+  const e = equipe.toUpperCase();
+  if (e === "GERAL") return true;
+  const equipes = e.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+  return equipes.some(eq => c.includes(eq) || eq.includes(c));
+}
+
 interface Pessoa {
   id: string;
   nome: string;
@@ -264,18 +273,15 @@ export function useSorteio() {
         }
 
         // Filtrar por carteira/equipe e limite semanal
-        const carteira = aud.carteira?.toUpperCase() || "";
         const advDisponiveis = advogados.filter((a) => {
           if (!pessoaDisponivel(a.id, diaAudiencia, horaAud)) return false;
           if (getContagemSemanal(a.id) >= LIMITE_SEMANAL) return false;
-          if (carteira && a.equipe) return a.equipe.toUpperCase() === carteira;
-          return !carteira;
+          return matchCarteiraEquipe(aud.carteira, a.equipe);
         });
         const prepDisponiveis = prepostos.filter((p) => {
           if (!pessoaDisponivel(p.id, diaAudiencia, horaAud)) return false;
           if (getContagemSemanal(p.id) >= LIMITE_SEMANAL) return false;
-          if (carteira && p.equipe) return p.equipe.toUpperCase() === carteira;
-          return !carteira;
+          return matchCarteiraEquipe(aud.carteira, p.equipe);
         });
 
         // Sem advogado E sem preposto
