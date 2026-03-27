@@ -99,7 +99,7 @@ const Dashboard = () => {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-y-scroll h-screen">
         <div className="max-w-[1400px] mx-auto px-6 py-6">
           {activeTab === "home" && <DashboardHome />}
           {activeTab === "importacao" && (
