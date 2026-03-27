@@ -143,7 +143,7 @@ export function useSorteio() {
         inicio,
         fim: getFimSemana(inicio),
         totalAudiencias: total,
-        sorteada: !!sorteioMap[inicio],
+        sorteada: false, // Always available since we only loaded pending
         dataSorteio: sorteioMap[inicio] || undefined,
       }))
       .sort((a, b) => a.inicio.localeCompare(b.inicio));
