@@ -478,24 +478,15 @@ const ImportacaoSegura = () => {
                   </p>
                 </div>
 
-                <div className="flex gap-2 pt-1">
+                <div className="pt-1">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1"
+                    className="w-full"
                     onClick={() => navigate("/?tab=audiencias")}
                   >
                     <ArrowRight className="mr-1.5 h-4 w-4" />
                     Ir para Audiências
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => navigate("/?tab=audiencias&status=pendente")}
-                  >
-                    <AlertTriangle className="mr-1.5 h-4 w-4" />
-                    Revisar Pendentes
                   </Button>
                 </div>
               </div>
