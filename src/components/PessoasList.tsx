@@ -22,29 +22,43 @@ interface Pessoa {
   horario_trabalho?: string | null;
 }
 
+interface Afastamento {
+  id: string;
+  pessoa_id: string;
+  tipo: string;
+  data_inicio: string;
+  data_fim: string;
+}
+
 const PessoasList = () => {
   const [pessoas, setPessoas] = useState<Pessoa[]>([]);
+  const [afastamentos, setAfastamentos] = useState<Afastamento[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchPessoas = async () => {
+    const fetchData = async () => {
       try {
-        const { data, error } = await supabase
-          .from("pessoas")
-          .select("*")
-          .eq("ativo", true)
-          .order("nome");
-        if (error) throw error;
-        setPessoas(data || []);
+        const [pessoasRes, afastRes] = await Promise.all([
+          supabase.from("pessoas").select("*").eq("ativo", true).order("nome"),
+          supabase.from("afastamentos").select("*").gte("data_fim", new Date().toISOString().split("T")[0]),
+        ]);
+        if (pessoasRes.error) throw pessoasRes.error;
+        setPessoas(pessoasRes.data || []);
+        setAfastamentos((afastRes.data as any[]) || []);
       } catch (error: any) {
         toast({ variant: "destructive", title: "Erro ao carregar pessoas", description: error.message });
       } finally {
         setLoading(false);
       }
     };
-    fetchPessoas();
+    fetchData();
   }, []);
+
+  const getAfastamentoAtivo = (pessoaId: string): Afastamento | null => {
+    const today = new Date().toISOString().split("T")[0];
+    return afastamentos.find((a) => a.pessoa_id === pessoaId && a.data_inicio <= today && a.data_fim >= today) || null;
+  };
 
   const advogados = pessoas.filter((p) => p.tipo === "advogado");
   const prepostos = pessoas.filter((p) => p.tipo === "preposto");
