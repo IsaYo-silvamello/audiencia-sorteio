@@ -123,7 +123,8 @@ const PessoasList = () => {
         )}
       </div>
     </div>
-  );
+    );
+  };
 
   const renderList = (list: Pessoa[], emptyMsg: string) => (
     list.length === 0 ? (
