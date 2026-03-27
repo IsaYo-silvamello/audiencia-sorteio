@@ -666,21 +666,6 @@ const AudienciasList = () => {
             <Download className="h-4 w-4 mr-2" />
             Extrair Planilha
           </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            className="hidden"
-            onChange={handleFileSelect}
-          />
-          <Button
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importing}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            {importing ? "Importando..." : "Importar Planilha"}
-          </Button>
           <Badge variant="outline" className="text-lg px-4 py-2">
             {filteredAudiencias.length} audiências
           </Badge>
