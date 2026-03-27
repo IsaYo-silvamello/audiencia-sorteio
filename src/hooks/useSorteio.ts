@@ -40,7 +40,12 @@ export interface SemanaDisponivel {
 
 type Status = "idle" | "executando" | "concluido" | "erro";
 
-const LIMITE_DIARIO = 3;
+const LIMITE_SEMANAL = 3;
+
+function foraDoExpediente(hora: string | null): boolean {
+  if (!hora) return false;
+  return hora < "09:00" || hora >= "18:00";
+}
 
 function getInicioSemana(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
