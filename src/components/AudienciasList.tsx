@@ -183,13 +183,9 @@ const AudienciasList = () => {
   const [loading, setLoading] = useState(true);
   const [searchNome, setSearchNome] = useState("");
   const [searchDoc, setSearchDoc] = useState("");
-  const [importing, setImporting] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [pendingRows, setPendingRows] = useState<any[]>([]);
   const [editAudiencia, setEditAudiencia] = useState<Audiencia | null>(null);
   const [editAudData, setEditAudData] = useState<Record<string, string>>({});
   const [savingEdit, setSavingEdit] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const fetchAudiencias = async () => {
