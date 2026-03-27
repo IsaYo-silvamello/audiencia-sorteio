@@ -54,6 +54,16 @@ interface Audiencia {
   documentacao?: string | null;
   adv_do_autor?: string | null;
   contato_cartorio?: string | null;
+  atribuicoes?: Array<{
+    pessoa: {
+      id: string;
+      nome: string;
+      tipo: string;
+      documento: string | null;
+    };
+  }>;
+}
+
 function isPresencial(audiencia: { tipo_audiencia?: string | null; local?: string | null }): boolean {
   const tipo = (audiencia.tipo_audiencia || "").toLowerCase();
   const local = (audiencia.local || "").toLowerCase();
