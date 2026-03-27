@@ -205,8 +205,19 @@ const ImportacaoSegura = () => {
     }
   };
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [pendingFiles, setPendingFiles] = useState<FileList | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setPendingFiles(files);
+    setShowConfirm(true);
+  };
+
+  const handleConfirmImport = async () => {
+    setShowConfirm(false);
+    const files = pendingFiles;
     if (!files || files.length === 0) return;
 
     setImporting(true);
