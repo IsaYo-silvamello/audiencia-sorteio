@@ -1,59 +1,36 @@
 
 
-## Plano: Férias e Época de Provas
+## Plano: Corrigir Regras de Distribuição
 
-### O que será feito
+### Mudanças
 
-Duas novas funcionalidades na gestão de pessoas:
+**1. Limite semanal de 3 (não diário)**
 
-1. **Férias** — marcar período de férias; pessoa não é sorteada durante esse período
-2. **Época de Provas** (estagiários) — marcar período com horário reduzido; pessoa não é sorteada para audiências fora do expediente especial
+Trocar a contagem por dia (`contagemDiaria`) por contagem por semana. Cada pessoa (advogado ou preposto) pode ter no máximo 3 audiências **por semana**.
 
-### Alterações no banco de dados
+**2. Audiências fora do expediente (9:00–18:00) → correspondente externo**
 
-Nova tabela `afastamentos` para armazenar ambos os cenários:
+Além de audiências presenciais, audiências com horário antes das 09:00 ou após as 18:00 também devem ser tratadas como correspondente externo, seguindo a mesma lógica de roteamento por UF.
 
-```sql
-CREATE TABLE public.afastamentos (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  pessoa_id uuid NOT NULL,
-  tipo text NOT NULL, -- 'ferias' ou 'provas'
-  data_inicio date NOT NULL,
-  data_fim date NOT NULL,
-  horario_especial_inicio time, -- só para provas (ex: 08:00)
-  horario_especial_fim time,    -- só para provas (ex: 14:00)
-  created_at timestamptz DEFAULT now()
-);
+**3. Sem advogado disponível → atribuir só preposto + correspondente**
 
-ALTER TABLE public.afastamentos ENABLE ROW LEVEL SECURITY;
--- Políticas públicas (mesmo padrão das outras tabelas)
-```
+Se não há advogado disponível mas há preposto, a audiência recebe o preposto e marca que precisa de correspondente para o advogado (seguindo regra de UF).
 
-### Alterações no sorteio (`useSorteio.ts`)
+**4. Sem preposto disponível → atribuir só advogado + correspondente**
 
-Ao buscar pessoas ativas, filtrar:
+Se não há preposto disponível mas há advogado, a audiência recebe o advogado e marca que precisa de correspondente para o preposto.
 
-- **Férias**: excluir pessoa se `data_audiencia` estiver entre `data_inicio` e `data_fim` de um afastamento tipo `ferias`
-- **Provas**: excluir pessoa se `hora_audiencia` estiver fora do intervalo `horario_especial_inicio`–`horario_especial_fim` de um afastamento tipo `provas` ativo naquela data
+### Arquivo impactado
 
-Não é necessário "voltar automaticamente" — a lógica verifica a data da audiência contra o período. Acabou o período, a pessoa volta a ser elegível naturalmente.
+`src/hooks/useSorteio.ts` — único arquivo a ser alterado.
 
-### Alterações na UI (`AdminPessoasManager.tsx`)
+### Detalhes técnicos
 
-- Adicionar botão de **calendário/férias** em cada card de pessoa
-- Ao clicar, abrir dialog para:
-  - Selecionar tipo: **Férias** ou **Época de Provas**
-  - Informar **data início** e **data fim**
-  - Se "Provas": campos de **horário especial** (início/fim)
-- Listar afastamentos ativos/futuros da pessoa com opção de remover
-- Badge visual no card indicando se a pessoa está em férias ou provas atualmente
-
-### Arquivos impactados
-
-| Arquivo | Mudança |
-|---|---|
-| **migração SQL** | Criar tabela `afastamentos` com RLS |
-| `src/hooks/useSorteio.ts` | Buscar afastamentos e filtrar pessoas no sorteio |
-| `src/components/AdminPessoasManager.tsx` | UI para gerenciar férias/provas por pessoa |
-| `src/components/PessoasList.tsx` | Badge visual de férias/provas (opcional, somente leitura) |
+- Renomear `LIMITE_DIARIO` → `LIMITE_SEMANAL = 3`
+- Substituir `contagemDiaria` (por dia) por `contagemSemanal` (total por pessoa na semana)
+- Adicionar função `foraDoExpediente(hora: string): boolean` que retorna `true` se `hora < "09:00"` ou `hora >= "18:00"`
+- No loop de audiências, antes da verificação presencial, checar `foraDoExpediente` e tratar como correspondente
+- Quando `advDisponiveis.length === 0` e `prepDisponiveis.length > 0`: atribuir preposto, marcar correspondente para advogado
+- Quando `prepDisponiveis.length === 0` e `advDisponiveis.length > 0`: atribuir advogado, marcar correspondente para preposto
+- Atualizar mensagens/motivos para refletir cada cenário
 
