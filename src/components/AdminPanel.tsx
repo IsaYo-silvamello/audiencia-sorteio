@@ -61,7 +61,7 @@ const AdminPanel = () => {
         </TabsContent>
 
         <TabsContent value="pessoas" className="mt-6">
-          <PessoasList />
+          <AdminPessoasManager />
         </TabsContent>
       </Tabs>
     </div>
