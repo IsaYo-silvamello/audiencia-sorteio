@@ -2,6 +2,15 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+function matchCarteiraEquipe(carteira: string | null, equipe: string | null): boolean {
+  if (!carteira || !equipe) return true;
+  const c = carteira.toUpperCase();
+  const e = equipe.toUpperCase();
+  if (e === "GERAL") return true;
+  const equipes = e.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+  return equipes.some(eq => c.includes(eq) || eq.includes(c));
+}
+
 interface Pessoa {
   id: string;
   nome: string;
