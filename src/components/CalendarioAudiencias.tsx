@@ -167,7 +167,7 @@ const CalendarioAudiencias = () => {
           return (
             <button
               key={key}
-              onClick={() => setSelectedDay(isSelected ? null : key)}
+              onClick={() => handleSelectDay(key)}
               className={`
                 text-left rounded-lg border transition-all duration-200 min-h-[140px] p-2.5 flex flex-col gap-1.5
                 hover:shadow-md hover:scale-[1.01] cursor-pointer
