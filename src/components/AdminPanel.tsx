@@ -3,7 +3,7 @@ import { UserPlus, Users, LogOut } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import NovaAudienciaForm from "@/components/NovaAudienciaForm";
-import PessoasList from "@/components/PessoasList";
+import AdminPessoasManager from "@/components/AdminPessoasManager";
 import AdminLogin from "@/components/AdminLogin";
 
 const AdminPanel = () => {
