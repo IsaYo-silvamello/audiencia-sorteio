@@ -1,21 +1,32 @@
 
 
-## Plan: Remove "Importar Planilha" button from Audiências tab
+## Plan: Limpar audiências antigas antes de nova importação
 
-### What changes
-In `src/components/AudienciasList.tsx`, remove the file import functionality (the "Importar Planilha" button and its associated logic) from the Audiências tab. The audiências data will only come from what was imported via the "Importar Pauta" tab (the `ImportacaoSegura` component).
+### O que muda
+Na função de importação (`ImportacaoSegura.tsx`), antes de processar os registros da nova planilha, o sistema irá **deletar todas as audiências existentes** no banco de dados. Assim, cada importação resulta em uma base limpa contendo apenas os dados da planilha recém-importada.
 
 ### Technical details
 
-**File: `src/components/AudienciasList.tsx`**
+**File: `src/components/ImportacaoSegura.tsx`**
 
-1. **Remove the "Importar Planilha" button** (lines 683-697) — the hidden file input and the button that triggers it
-2. **Remove unused state and refs**: `importing`, `showConfirm`, `pendingRows`, `fileInputRef`
-3. **Remove the `handleFileSelect` function** (lines 308-349) — file reading and parsing logic
-4. **Remove the `handleConfirmImport` function** (lines 351-469) — import + auto-sorteio logic
-5. **Remove the confirmation AlertDialog** that asks to confirm import (search for `showConfirm` usage in the JSX)
-6. **Remove unused imports**: `Upload`, `useRef`, `XLSX` (if only used by import), `HEADER_MAP`, `parseExcelDate`, `parseExcelTime`, helper functions only used by import (`isPresencial`, `extrairUF`, `getEquipeCorrespondente`, `CODIGO_ESTADO`)
-7. **Keep**: the "Extrair Planilha" (export) button, search, edit, delete, and all display logic
+Na função `handleFile`, logo antes do loop `for (const file of Array.from(files))` (linha ~222), adicionar:
 
-The audiências list will remain purely a read/display/edit view, showing only data that was imported through the dedicated "Importar Pauta" tab.
+```typescript
+setImportStatus("Removendo audiências anteriores...");
+const { error: deleteError } = await supabase.from("audiencias").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+if (deleteError) {
+  toast({ title: "Erro ao limpar audiências anteriores", description: deleteError.message, variant: "destructive" });
+  setImporting(false);
+  return;
+}
+```
+
+Também limpar as atribuições associadas:
+```typescript
+await supabase.from("atribuicoes").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+```
+
+Isso garante que a cada nova importação, a base parte do zero — sem acúmulo de dados de importações anteriores.
+
+> **Nota:** `.neq("id", "...")` com UUID inexistente é o padrão Supabase para "delete all rows", já que `.delete()` sem filtro é bloqueado pelo SDK.
 
