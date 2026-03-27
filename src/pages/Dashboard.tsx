@@ -29,6 +29,11 @@ const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "home");
   const [collapsed, setCollapsed] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleImportComplete = () => {
+    setRefreshKey((k) => k + 1);
+  };
 
   useEffect(() => {
     const tab = searchParams.get("tab");

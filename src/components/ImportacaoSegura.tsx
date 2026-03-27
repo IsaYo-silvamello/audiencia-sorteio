@@ -396,6 +396,8 @@ const ImportacaoSegura = ({ onImportComplete }: { onImportComplete?: () => void 
         title: "✅ Importação concluída",
         description: `${totalRows} registros processados com sucesso.`,
       });
+
+      onImportComplete?.();
     } catch (err: any) {
       console.error("Erro na importação:", err);
       toast({
