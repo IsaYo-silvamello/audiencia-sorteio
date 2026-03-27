@@ -68,6 +68,17 @@ const CalendarioAudiencias = () => {
   const [audiencias, setAudiencias] = useState<Audiencia[]>([]);
   const [semanaRef, setSemanaRef] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const detailRef = useRef<HTMLDivElement>(null);
+
+  const handleSelectDay = useCallback((key: string) => {
+    const isAlreadySelected = selectedDay === key;
+    setSelectedDay(isAlreadySelected ? null : key);
+    if (!isAlreadySelected) {
+      setTimeout(() => {
+        detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [selectedDay]);
 
   useEffect(() => {
     const fetchAudiencias = async () => {
