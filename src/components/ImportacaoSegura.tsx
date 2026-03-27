@@ -219,6 +219,21 @@ const ImportacaoSegura = () => {
     const fileNames: string[] = [];
 
     try {
+      // Limpar audiências e atribuições antigas antes da nova importação
+      setImportStatus("Removendo audiências anteriores...");
+      const { error: deleteAtribError } = await supabase.from("atribuicoes").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      if (deleteAtribError) {
+        toast({ title: "Erro ao limpar atribuições anteriores", description: deleteAtribError.message, variant: "destructive" });
+        setImporting(false);
+        return;
+      }
+      const { error: deleteError } = await supabase.from("audiencias").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      if (deleteError) {
+        toast({ title: "Erro ao limpar audiências anteriores", description: deleteError.message, variant: "destructive" });
+        setImporting(false);
+        return;
+      }
+
       for (const file of Array.from(files)) {
         fileNames.push(file.name);
 
