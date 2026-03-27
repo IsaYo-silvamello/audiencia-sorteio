@@ -443,7 +443,7 @@ const ImportacaoSegura = () => {
           </CardHeader>
 
           <CardContent className="space-y-4">
-            <input ref={fileRef} type="file" accept=".xlsx,.xls" multiple className="hidden" onChange={handleFile} />
+            <input ref={fileRef} type="file" accept=".xlsx,.xls" multiple className="hidden" onChange={handleFileSelect} />
 
             <Button onClick={() => fileRef.current?.click()} disabled={importing} size="lg" className="w-full">
               <Upload className="mr-2 h-5 w-5" />
