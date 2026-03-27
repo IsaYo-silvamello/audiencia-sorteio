@@ -326,7 +326,7 @@ const CalendarioAudiencias = () => {
                       </div>
                     ))}
                 </div>
-              </ScrollArea>
+              </div>
             </CardContent>
           </Card>
         </div>
