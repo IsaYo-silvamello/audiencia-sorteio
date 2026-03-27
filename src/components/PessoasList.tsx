@@ -63,13 +63,29 @@ const PessoasList = () => {
   const advogados = pessoas.filter((p) => p.tipo === "advogado");
   const prepostos = pessoas.filter((p) => p.tipo === "preposto");
 
-  const renderPessoaCard = (pessoa: Pessoa) => (
+  const renderPessoaCard = (pessoa: Pessoa) => {
+    const afastAtivo = getAfastamentoAtivo(pessoa.id);
+    return (
     <div
       key={pessoa.id}
       className="flex items-start justify-between p-4 rounded-lg border bg-card hover:bg-accent/30 transition-colors"
     >
       <div className="space-y-1">
-        <span className="font-medium text-foreground">{pessoa.nome}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-foreground">{pessoa.nome}</span>
+          {afastAtivo && (
+            <Badge
+              variant={afastAtivo.tipo === "ferias" ? "destructive" : "secondary"}
+              className="text-[10px] gap-1"
+            >
+              {afastAtivo.tipo === "ferias" ? (
+                <><CalendarOff className="h-3 w-3" /> Férias</>
+              ) : (
+                <><GraduationCap className="h-3 w-3" /> Provas</>
+              )}
+            </Badge>
+          )}
+        </div>
         <div className="flex flex-wrap gap-1.5 text-sm text-muted-foreground">
           {pessoa.documento && <span>OAB/CPF: {pessoa.documento}</span>}
         </div>
