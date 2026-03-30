@@ -52,7 +52,7 @@ interface Afastamento {
 }
 
 const CLIENTES_PREPOSTO = [
-  "Acordos", "BRADESCO", "Eletrobrás", "GERAL", "ITAÚ", "ITAÚ - CARTÕES",
+  "Acordos", "AUDIÊNCIAS", "BRADESCO", "Eletrobrás", "GERAL", "ITAÚ", "ITAÚ - CARTÕES",
   "ITAÚ - Fraudes", "ITAÚ - SB/FRAUDE/CONSIGNADO", "ITAÚ - SUPERENDIVIDAMENTO",
   "ITAÚ JV", "MELI", "PLANOS ECONÔMICOS", "VIVO",
 ];
