@@ -2,10 +2,14 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+function normalize(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+}
+
 function matchCarteiraEquipe(carteira: string | null, equipe: string | null): boolean {
   if (!carteira || !equipe) return true;
-  const c = carteira.toUpperCase();
-  const e = equipe.toUpperCase();
+  const c = normalize(carteira);
+  const e = normalize(equipe);
   if (e === "GERAL") return true;
   const equipes = e.split(/[,;]/).map(s => s.trim()).filter(Boolean);
   return equipes.some(eq => c.includes(eq) || eq.includes(c));
