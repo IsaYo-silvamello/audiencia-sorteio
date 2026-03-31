@@ -43,6 +43,7 @@ const SorteioAudiencias = ({ onSorteioComplete }: SorteioAudienciasProps) => {
     setConfirmar(false);
     if (semanaSelecionada) {
       await realizarSorteio(semanaSelecionada);
+      onSorteioComplete?.();
     }
   };
 
