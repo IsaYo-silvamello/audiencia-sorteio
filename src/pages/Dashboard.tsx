@@ -113,7 +113,7 @@ const Dashboard = () => {
               <ImportacaoSegura onImportComplete={handleImportComplete} />
             </div>
           )}
-          {activeTab === "sorteio" && <SorteioAudiencias key={refreshKey} />}
+          {activeTab === "sorteio" && <SorteioAudiencias key={refreshKey} onSorteioComplete={handleImportComplete} />}
           {activeTab === "audiencias" && <AudienciasList key={refreshKey} />}
           {activeTab === "calendario" && <CalendarioAudiencias key={refreshKey} />}
           {activeTab === "equipe" && <PessoasList key={refreshKey} />}

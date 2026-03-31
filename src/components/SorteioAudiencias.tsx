@@ -18,7 +18,11 @@ import { Shuffle, AlertCircle, TriangleAlert, CheckCircle2, XCircle, MapPin, Che
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-const SorteioAudiencias = () => {
+interface SorteioAudienciasProps {
+  onSorteioComplete?: () => void;
+}
+
+const SorteioAudiencias = ({ onSorteioComplete }: SorteioAudienciasProps) => {
   const { status, resultado, realizarSorteio, limpar, semanasDisponiveis, carregarSemanas } = useSorteio();
   const [confirmar, setConfirmar] = useState(false);
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
