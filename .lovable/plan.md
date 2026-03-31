@@ -1,25 +1,24 @@
 
 
-## Plano: Sincronizar aba Audiências após sorteio
+## Plano: Adicionar normalização de acentos no match carteira ↔ equipe
 
-### Problema
+### Arquivo impactado
 
-Após o sorteio, os dados são atualizados no banco (status muda para "atribuida", advogado/preposto são preenchidos), mas a aba Audiências não recarrega porque o `refreshKey` do Dashboard não é incrementado. O componente `SorteioAudiencias` não notifica o Dashboard que houve mudança.
+`src/hooks/useSorteio.ts`
 
-### Solução
+### Mudanças
 
-Passar um callback `onSorteioComplete` do Dashboard para o `SorteioAudiencias`, que chama `setRefreshKey(k => k + 1)` ao final do sorteio. Isso força todas as abas a recarregarem.
+1. Criar função `normalize` que remove diacríticos:
+```typescript
+function normalize(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+}
+```
 
-### Arquivos impactados
+2. Atualizar `matchCarteiraEquipe` para usar `normalize()` em vez de `.toUpperCase()`:
+- `normalize(carteira)` em vez de `carteira.toUpperCase()`
+- `normalize(equipe)` em vez de `equipe.toUpperCase()`
+- `normalize()` nos itens do split também
 
-| Arquivo | Mudança |
-|---|---|
-| `src/pages/Dashboard.tsx` | Passar prop `onSorteioComplete={handleImportComplete}` ao `SorteioAudiencias` |
-| `src/components/SorteioAudiencias.tsx` | Aceitar prop `onSorteioComplete` e chamá-la após `realizarSorteio` concluir com sucesso |
-
-### Detalhes técnicos
-
-1. Em `SorteioAudiencias`, adicionar prop `onSorteioComplete?: () => void`
-2. Na função `executar`, após `await realizarSorteio(...)`, chamar `onSorteioComplete?.()`
-3. Em `Dashboard.tsx`, passar `onSorteioComplete={handleImportComplete}` onde renderiza `<SorteioAudiencias>`
+Isso resolve casos como "ITAÚ" vs "ITAU", "ILÍCITOS" vs "ILICITOS", etc.
 
