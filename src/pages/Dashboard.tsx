@@ -11,6 +11,7 @@ import CalendarioAudiencias from "@/components/CalendarioAudiencias";
 import ImportacaoSegura from "@/components/ImportacaoSegura";
 import SorteioAudiencias from "@/components/SorteioAudiencias";
 import PessoasList from "@/components/PessoasList";
+import PautaAtual from "@/components/PautaAtual";
 import smaartTec from "@/assets/smaart-tec.png";
 import smLab from "@/assets/sm-lab.png";
 import smaartLogo from "@/assets/smaart-logo.png";
