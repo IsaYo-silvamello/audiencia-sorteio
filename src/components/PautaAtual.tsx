@@ -6,15 +6,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Calendar, Clock, Users, AlertTriangle, CheckCircle2,
   Link2, MapPin, Pencil, ExternalLink, Building2, Monitor,
-  FileText, History, ChevronLeft, ChevronRight
+  FileText, History, ChevronLeft, ChevronRight, Star, UserCheck
 } from "lucide-react";
 import { startOfWeek, endOfWeek, format, addDays, addWeeks, isSameWeek, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+
+function normalize(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+}
 
 interface Audiencia {
   id: string;
