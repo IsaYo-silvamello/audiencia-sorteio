@@ -124,7 +124,7 @@ export default function PautaAtual() {
   }, [inicio, fim]);
 
   const fetchData = useCallback(async () => {
-    const [{ data: auds }, { data: hist }] = await Promise.all([
+    const [{ data: auds }, { data: hist }, { data: pessoasData }] = await Promise.all([
       supabase
         .from("audiencias")
         .select("id, autor, reu, data_audiencia, hora_audiencia, tipo_audiencia, local, foro, link, status, carteira, numero_processo, advogado, preposto, npc_dossie, adv_responsavel")
@@ -136,10 +136,60 @@ export default function PautaAtual() {
         .eq("semana_inicio", inicioStr)
         .order("executado_em", { ascending: false })
         .limit(1),
+      supabase
+        .from("pessoas")
+        .select("id, nome, tipo, equipe, ativo")
+        .eq("tipo", "preposto")
+        .eq("ativo", true),
     ]);
     setAudiencias(auds || []);
+    setPrepostos(pessoasData || []);
     setUltimaDistribuicao(hist && hist.length > 0 ? hist[0] : null);
   }, [inicioStr, fimStr]);
+
+  // Count how many audiencias each preposto has this week
+  const prepostoContagem = useMemo(() => {
+    const contagem: Record<string, number> = {};
+    audiencias.forEach(a => {
+      if (a.preposto) {
+        const key = normalize(a.preposto);
+        contagem[key] = (contagem[key] || 0) + 1;
+      }
+    });
+    return contagem;
+  }, [audiencias]);
+
+  // Get sorted prepostos for a given audiencia (client match first)
+  const getPrepostosOrdenados = useCallback((aud: Audiencia) => {
+    const clienteAud = normalize(aud.reu || "");
+    return prepostos
+      .map(p => {
+        const nomeNorm = normalize(p.nome);
+        const count = prepostoContagem[nomeNorm] || 0;
+        const equipes = (p.equipe || "").split(",").map(e => normalize(e.trim())).filter(Boolean);
+        const isClienteMatch = equipes.some(eq => clienteAud.includes(eq) || eq.includes(clienteAud));
+        return { ...p, count, isClienteMatch, disponivel: count < 3 };
+      })
+      .filter(p => p.disponivel)
+      .sort((a, b) => {
+        if (a.isClienteMatch !== b.isClienteMatch) return a.isClienteMatch ? -1 : 1;
+        return a.count - b.count;
+      });
+  }, [prepostos, prepostoContagem]);
+
+  const handleAssignPreposto = async (audId: string, prepostoNome: string) => {
+    const { error } = await supabase
+      .from("audiencias")
+      .update({ preposto: prepostoNome })
+      .eq("id", audId);
+    if (error) {
+      toast.error("Erro ao atribuir preposto: " + error.message);
+    } else {
+      toast.success(`Preposto ${prepostoNome} atribuído!`);
+      setAssigningPreposto(null);
+      fetchData();
+    }
+  };
 
   useEffect(() => {
     fetchData();
