@@ -59,6 +59,11 @@ interface Pessoa {
   ativo: boolean;
 }
 
+function isSessaoJulgamento(aud: { tipo_audiencia?: string | null }): boolean {
+  const tipo = (aud.tipo_audiencia || "").toLowerCase();
+  return tipo.includes("sessão de julgamento") || tipo.includes("sessao de julgamento");
+}
+
 function isPresencial(aud: Audiencia): boolean {
   const tipo = (aud.tipo_audiencia || "").toLowerCase();
   const local = (aud.local || "").toLowerCase();
