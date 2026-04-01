@@ -14,9 +14,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Shuffle, AlertCircle, TriangleAlert, CheckCircle2, XCircle, MapPin, ChevronDown, ChevronUp, CalendarCheck, Calendar } from "lucide-react";
+import { Shuffle, AlertCircle, TriangleAlert, CheckCircle2, XCircle, MapPin, ChevronDown, ChevronUp, CalendarCheck, Calendar, Loader2, History } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Progress } from "@/components/ui/progress";
+import HistoricoSorteios from "@/components/HistoricoSorteios";
 
 interface SorteioAudienciasProps {
   onSorteioComplete?: () => void;
