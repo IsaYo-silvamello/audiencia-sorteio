@@ -1,23 +1,31 @@
 
 
-## Plano: Registrar audiências descartadas com log clicável
+## Plano: Limite de 1 audiência por dia por pessoa
 
-### Mudanças no arquivo `src/components/ImportacaoSegura.tsx`
+### Problema
 
-**1. Estado para armazenar descartados**
-- Novo state `descartados` — array de objetos `{ npc, autor, reu, tipo, motivo }` coletados durante a importação.
-- Novo state `showDescartados` (boolean) para controlar a exibição do log.
+Atualmente o sistema limita apenas 3 audiências por **semana**, mas permite múltiplas no mesmo dia. Exemplo: Bianca Tranquelin com 2 audiências no dia 07/04 às 09:30 e 10:00.
 
-**2. Captura durante importação (linhas 334-338)**
-- Onde hoje faz `continue` para sessões de julgamento, antes do `continue`, fazer `push` no array de descartados com os dados da linha: NPC/Dossiê, Autor, Réu, Tipo da Audiência e Motivo ("Sessão de Julgamento — não é audiência efetiva").
+### Mudança no arquivo `src/hooks/useSorteio.ts`
 
-**3. Exibição no resultado da importação (após o bloco de sucesso, ~linha 510-517)**
-- Se houver descartados, substituir/complementar a linha de "inconsistências" com um texto clicável: "X registro(s) descartado(s)" com um botão/link discreto "Ver detalhes".
-- Ao clicar, abre um Collapsible ou Dialog listando cada registro descartado em uma tabela simples (NPC, Autor, Réu, Tipo, Motivo).
+**1. Adicionar contagem diária além da semanal (linhas 377-384)**
+- Criar `contagemDiaria: Record<string, Record<string, number>>` — chave é `pessoaId`, valor é mapa de `data → count`.
+- Função `addContagemDiaria(pessoaId, data)` para incrementar.
 
-### Detalhes técnicos
-- Usar `Collapsible` do shadcn (já existe no projeto) para manter discreto
-- Ícone `EyeOff` ou `Filter` do lucide para indicar "descartados"
-- Resetar `descartados` no início de cada importação junto com `result`
-- Não altera banco de dados — tudo em memória local durante a sessão
+**2. Filtrar por limite diário nos advogados (linhas 457-461)**
+- Adicionar condição: `if ((contagemDiaria[a.id]?.[diaAudiencia] || 0) >= 1) return false`
+- Mantém o filtro semanal existente (`>= LIMITE_SEMANAL`).
+
+**3. Filtrar por limite diário nos prepostos (linhas 463-467)**
+- Mesma condição: `if ((contagemDiaria[p.id]?.[diaAudiencia] || 0) >= 1) return false`
+
+**4. Atualizar `addContagem` (linhas 502-503)**
+- Após atribuir advogado/preposto, chamar `addContagemDiaria` além do `addContagem` semanal.
+
+**5. Carregar contagem diária das atribuições existentes**
+- Ao carregar atribuições da semana (linha 372-379), fazer join com `audiencias` para obter `data_audiencia` e popular `contagemDiaria` com atribuições já existentes.
+
+### Resumo das regras finais
+- Máximo **3 audiências por semana** por pessoa (já existe)
+- Máximo **1 audiência por dia** por pessoa (novo)
 
