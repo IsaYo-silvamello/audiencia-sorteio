@@ -216,8 +216,10 @@ export default function PautaAtual() {
     return () => { supabase.removeChannel(channel); };
   }, [fetchData]);
 
-  const audienciasOnline = useMemo(() => audiencias.filter(a => !isPresencial(a)), [audiencias]);
-  const audienciasPresencial = useMemo(() => audiencias.filter(a => isPresencial(a)), [audiencias]);
+  // Filtrar sessões de julgamento — não são audiências efetivas
+  const audienciasEfetivas = useMemo(() => audiencias.filter(a => !isSessaoJulgamento(a)), [audiencias]);
+  const audienciasOnline = useMemo(() => audienciasEfetivas.filter(a => !isPresencial(a)), [audienciasEfetivas]);
+  const audienciasPresencial = useMemo(() => audienciasEfetivas.filter(a => isPresencial(a)), [audienciasEfetivas]);
 
   const totalAudiencias = audiencias.length;
   const completasOnline = audienciasOnline.filter(a => getPendenciasOnline(a).length === 0).length;
