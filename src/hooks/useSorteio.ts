@@ -481,12 +481,14 @@ export function useSorteio() {
         const advDisponiveis = todosAdvogados.filter((a) => {
           if (!pessoaDisponivel(a.id, diaAudiencia, horaAud)) return false;
           if ((contagemSemanal[a.id] || 0) >= LIMITE_SEMANAL) return false;
+          if ((contagemDiaria[a.id]?.[diaAudiencia] || 0) >= 1) return false;
           return true;
         });
 
         const prepDisponiveis = todosPrepostos.filter((p) => {
           if (!pessoaDisponivel(p.id, diaAudiencia, horaAud)) return false;
           if ((contagemSemanal[p.id] || 0) >= LIMITE_SEMANAL) return false;
+          if ((contagemDiaria[p.id]?.[diaAudiencia] || 0) >= 1) return false;
           return matchCarteiraEquipe(aud.carteira, p.equipe);
         });
 
