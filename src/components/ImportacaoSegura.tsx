@@ -520,12 +520,52 @@ const ImportacaoSegura = ({ onImportComplete }: { onImportComplete?: () => void 
                   </div>
                 </div>
 
+                {descartados.length > 0 && (
+                  <Collapsible open={showDescartados} onOpenChange={setShowDescartados}>
+                    <CollapsibleTrigger asChild>
+                      <button className="flex w-full items-center gap-2 rounded-lg bg-white/80 border border-amber-200 p-2.5 px-3 hover:bg-amber-50 transition-colors cursor-pointer">
+                        <EyeOff className="h-4 w-4 text-amber-500 shrink-0" />
+                        <p className="text-xs text-amber-700 font-medium flex-1 text-left">
+                          {descartados.length} registro(s) descartado(s)
+                        </p>
+                        <ChevronDown className={`h-4 w-4 text-amber-500 transition-transform ${showDescartados ? 'rotate-180' : ''}`} />
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="mt-2 rounded-lg border border-amber-200 overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-amber-50">
+                              <TableHead className="text-xs">NPC/Dossiê</TableHead>
+                              <TableHead className="text-xs">Autor</TableHead>
+                              <TableHead className="text-xs">Réu</TableHead>
+                              <TableHead className="text-xs">Tipo</TableHead>
+                              <TableHead className="text-xs">Motivo</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {descartados.map((d, i) => (
+                              <TableRow key={i} className="text-xs">
+                                <TableCell className="py-1.5">{d.npc}</TableCell>
+                                <TableCell className="py-1.5 max-w-[150px] truncate">{d.autor}</TableCell>
+                                <TableCell className="py-1.5 max-w-[150px] truncate">{d.reu}</TableCell>
+                                <TableCell className="py-1.5">{d.tipo}</TableCell>
+                                <TableCell className="py-1.5 text-amber-600">{d.motivo}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+
                 <div className="flex items-center gap-2 rounded-lg bg-white/80 border border-green-100 p-2.5 px-3">
                   <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
                   <p className="text-xs text-muted-foreground">
-                    {result.total - result.inserted - result.updated === 0
+                    {result.total - result.inserted - result.updated - descartados.length === 0
                       ? "Nenhuma inconsistência encontrada."
-                      : `${result.total - result.inserted - result.updated} registro(s) com inconsistência.`}
+                      : `${result.total - result.inserted - result.updated - descartados.length} registro(s) com inconsistência.`}
                   </p>
                 </div>
 
