@@ -293,6 +293,24 @@ const SorteioAudiencias = ({ onSorteioComplete }: SorteioAudienciasProps) => {
         </Card>
       )}
 
+      {/* Histórico de Distribuições */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <History className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Histórico de Distribuições</CardTitle>
+              <CardDescription>Registro de todas as distribuições realizadas</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <HistoricoSorteios />
+        </CardContent>
+      </Card>
+
       {/* Modal de confirmação */}
       <AlertDialog open={confirmar} onOpenChange={setConfirmar}>
         <AlertDialogContent>
