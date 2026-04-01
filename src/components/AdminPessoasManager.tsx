@@ -352,8 +352,8 @@ const AdminPessoasManager = () => {
           )}
           <div className="space-y-2">
             <Label>Clientes</Label>
-            <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-36 overflow-y-auto">
-              {CLIENTES_PREPOSTO.map((c) => {
+            <div className="grid grid-cols-3 gap-2 border rounded-md p-3 max-h-36 overflow-y-auto">
+              {EQUIPES.map((c) => {
                 const sel = data.equipe ? data.equipe.split(", ") : [];
                 return (
                   <label key={c} className="flex items-center gap-2 text-sm cursor-pointer">
