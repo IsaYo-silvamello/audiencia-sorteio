@@ -474,15 +474,19 @@ export function useSorteio() {
         if (!advSorteado) obsCorrespondente += `Sem advogado disponível — correspondente necessário (${equipe}). `;
         if (!prepSorteado) obsCorrespondente += `Sem preposto disponível — correspondente necessário (${equipe}). `;
 
-        await supabase
-          .from("audiencias")
-          .update({
-            status: "atribuida",
-            advogado: advSorteado?.nome || null,
-            preposto: prepSorteado?.nome || null,
-            observacoes: obsCorrespondente || null,
-          })
-          .eq("id", aud.id);
+        try {
+          await supabase
+            .from("audiencias")
+            .update({
+              status: "atribuida",
+              advogado: advSorteado?.nome || null,
+              preposto: prepSorteado?.nome || null,
+              observacoes: obsCorrespondente || null,
+            })
+            .eq("id", aud.id);
+        } catch (e) {
+          console.error("Erro ao atualizar audiência atribuída:", aud.id, e);
+        }
 
         atribuidas++;
 
