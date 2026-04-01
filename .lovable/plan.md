@@ -1,31 +1,29 @@
 
 
-## Plano: Limite de 1 audiência por dia por pessoa
+## Plano: Persistir log de descartados entre navegações
 
 ### Problema
 
-Atualmente o sistema limita apenas 3 audiências por **semana**, mas permite múltiplas no mesmo dia. Exemplo: Bianca Tranquelin com 2 audiências no dia 07/04 às 09:30 e 10:00.
+Os registros descartados são armazenados em `useState` no componente `ImportacaoSegura.tsx`. Ao trocar de aba, o componente desmonta e o estado é perdido. Ao voltar, a caixa de descartados não aparece mais.
 
-### Mudança no arquivo `src/hooks/useSorteio.ts`
+### Solução
 
-**1. Adicionar contagem diária além da semanal (linhas 377-384)**
-- Criar `contagemDiaria: Record<string, Record<string, number>>` — chave é `pessoaId`, valor é mapa de `data → count`.
-- Função `addContagemDiaria(pessoaId, data)` para incrementar.
+Salvar os descartados da última importação no `localStorage`, de modo que ao voltar na aba de importação os dados persistam.
 
-**2. Filtrar por limite diário nos advogados (linhas 457-461)**
-- Adicionar condição: `if ((contagemDiaria[a.id]?.[diaAudiencia] || 0) >= 1) return false`
-- Mantém o filtro semanal existente (`>= LIMITE_SEMANAL`).
+### Mudanças no arquivo `src/components/ImportacaoSegura.tsx`
 
-**3. Filtrar por limite diário nos prepostos (linhas 463-467)**
-- Mesma condição: `if ((contagemDiaria[p.id]?.[diaAudiencia] || 0) >= 1) return false`
+**1. Inicializar `descartados` a partir do localStorage**
+- Ao montar, ler `localStorage.getItem("ultimosDescartados")` e parsear como JSON.
+- Se houver dados, popular o state `descartados` e manter `showDescartados = false`.
 
-**4. Atualizar `addContagem` (linhas 502-503)**
-- Após atribuir advogado/preposto, chamar `addContagemDiaria` além do `addContagem` semanal.
+**2. Salvar no localStorage após importação**
+- Ao final da importação (onde hoje faz `setResult`), salvar os descartados coletados em `localStorage.setItem("ultimosDescartados", JSON.stringify(descartados))`.
 
-**5. Carregar contagem diária das atribuições existentes**
-- Ao carregar atribuições da semana (linha 372-379), fazer join com `audiencias` para obter `data_audiencia` e popular `contagemDiaria` com atribuições já existentes.
+**3. Limpar ao iniciar nova importação**
+- No início de cada importação (onde faz `setDescartados([])`), limpar também o localStorage.
 
-### Resumo das regras finais
-- Máximo **3 audiências por semana** por pessoa (já existe)
-- Máximo **1 audiência por dia** por pessoa (novo)
+### Detalhes técnicos
+- Chave: `"ultimosDescartados"`
+- Formato: JSON array de `{ npc, autor, reu, tipo, motivo }`
+- Sem alteração visual — mesma Collapsible existente
 
