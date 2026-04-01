@@ -200,7 +200,12 @@ const ImportacaoSegura = ({ onImportComplete }: { onImportComplete?: () => void 
     updated: number;
   } | null>(null);
   const [historico, setHistorico] = useState<HistoricoImportacao[]>([]);
-  const [descartados, setDescartados] = useState<{ npc: string; autor: string; reu: string; tipo: string; motivo: string }[]>([]);
+  const [descartados, setDescartados] = useState<{ npc: string; autor: string; reu: string; tipo: string; motivo: string }[]>(() => {
+    try {
+      const saved = localStorage.getItem("ultimosDescartados");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [showDescartados, setShowDescartados] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
@@ -246,6 +251,7 @@ const ImportacaoSegura = ({ onImportComplete }: { onImportComplete?: () => void 
     setResult(null);
     setDescartados([]);
     setShowDescartados(false);
+    localStorage.removeItem("ultimosDescartados");
     setImportProgress(0);
     setImportStatus("Lendo planilhas...");
 
@@ -414,6 +420,12 @@ const ImportacaoSegura = ({ onImportComplete }: { onImportComplete?: () => void 
         total: totalRows,
         inserted: totalInserted,
         updated: totalUpdated,
+      });
+
+      // Persistir descartados no localStorage
+      setDescartados(prev => {
+        localStorage.setItem("ultimosDescartados", JSON.stringify(prev));
+        return prev;
       });
 
       const { error: historicoError } = await supabase.from("historico_importacoes").insert({
