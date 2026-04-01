@@ -200,6 +200,8 @@ const ImportacaoSegura = ({ onImportComplete }: { onImportComplete?: () => void 
     updated: number;
   } | null>(null);
   const [historico, setHistorico] = useState<HistoricoImportacao[]>([]);
+  const [descartados, setDescartados] = useState<{ npc: string; autor: string; reu: string; tipo: string; motivo: string }[]>([]);
+  const [showDescartados, setShowDescartados] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
