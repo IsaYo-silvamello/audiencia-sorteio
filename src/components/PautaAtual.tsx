@@ -10,9 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   Calendar, Clock, Users, AlertTriangle, CheckCircle2,
   Link2, MapPin, Pencil, ExternalLink, Building2, Monitor,
-  FileText, History
+  FileText, History, ChevronLeft, ChevronRight
 } from "lucide-react";
-import { startOfWeek, endOfWeek, format, addDays, parseISO } from "date-fns";
+import { startOfWeek, endOfWeek, format, addDays, addWeeks, isSameWeek, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
@@ -73,11 +73,33 @@ export default function PautaAtual() {
   const [editAud, setEditAud] = useState<Audiencia | null>(null);
   const [editForm, setEditForm] = useState<Partial<Audiencia>>({});
   const [saving, setSaving] = useState(false);
+  const [semanaAtual, setSemanaAtual] = useState<Date | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const inicio = useMemo(() => startOfWeek(new Date(), { weekStartsOn: 0 }), []);
-  const fim = useMemo(() => endOfWeek(new Date(), { weekStartsOn: 0 }), []);
+  // On mount: find the latest distribution week, default to current week
+  useEffect(() => {
+    async function init() {
+      const { data } = await supabase
+        .from("historico_sorteios")
+        .select("semana_inicio")
+        .order("executado_em", { ascending: false })
+        .limit(1);
+      if (data && data.length > 0 && data[0].semana_inicio) {
+        setSemanaAtual(startOfWeek(parseISO(data[0].semana_inicio), { weekStartsOn: 0 }));
+      } else {
+        setSemanaAtual(startOfWeek(new Date(), { weekStartsOn: 0 }));
+      }
+      setLoading(false);
+    }
+    init();
+  }, []);
+
+  const inicio = useMemo(() => semanaAtual || startOfWeek(new Date(), { weekStartsOn: 0 }), [semanaAtual]);
+  const fim = useMemo(() => endOfWeek(inicio, { weekStartsOn: 0 }), [inicio]);
   const inicioStr = useMemo(() => format(inicio, "yyyy-MM-dd"), [inicio]);
   const fimStr = useMemo(() => format(fim, "yyyy-MM-dd"), [fim]);
+
+  const isCurrentWeek = useMemo(() => isSameWeek(new Date(), inicio, { weekStartsOn: 0 }), [inicio]);
 
   const semanaLabel = useMemo(() => {
     const seg = addDays(inicio, 1);
@@ -181,16 +203,38 @@ export default function PautaAtual() {
     setSaving(false);
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-muted-foreground">
+        <Clock className="h-5 w-5 animate-spin mr-2" /> Carregando...
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <FileText className="h-6 w-6 text-primary" />
-            Pauta Atual
-          </h1>
-          <p className="text-muted-foreground mt-1">Semana {semanaLabel}</p>
+      {/* Header with week navigation */}
+      <div className="flex flex-col gap-4">
+        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <FileText className="h-6 w-6 text-primary" />
+          Pauta Atual
+        </h1>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => setSemanaAtual(s => addWeeks(s!, -1))}>
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <div className={`text-center px-6 py-2 rounded-xl border-2 transition-all ${isCurrentWeek ? "border-primary bg-primary/5" : "border-border bg-card"}`}>
+            <p className={`text-lg font-bold ${isCurrentWeek ? "text-primary" : "text-foreground"}`}>{semanaLabel}</p>
+            {isCurrentWeek && <Badge className="bg-primary/10 text-primary border-primary/30 text-xs mt-1">Semana atual</Badge>}
+          </div>
+          <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => setSemanaAtual(s => addWeeks(s!, 1))}>
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+          {!isCurrentWeek && (
+            <Button variant="ghost" size="sm" onClick={() => setSemanaAtual(startOfWeek(new Date(), { weekStartsOn: 0 }))}>
+              Ir para semana atual
+            </Button>
+          )}
         </div>
       </div>
 
