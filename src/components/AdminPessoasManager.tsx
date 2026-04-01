@@ -369,6 +369,7 @@ const AdminPessoasManager = () => {
         </>
       )}
 
+      {data.tipo === "advogado" && (
       <div className="space-y-2">
         <Label>Carteira (Assunto)</Label>
         <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto">
@@ -385,6 +386,7 @@ const AdminPessoasManager = () => {
           })}
         </div>
       </div>
+      )}
 
       <div className="space-y-2">
         <Label>Observação</Label>
