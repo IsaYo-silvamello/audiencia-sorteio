@@ -10,9 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   Calendar, Clock, Users, AlertTriangle, CheckCircle2,
   Link2, MapPin, Pencil, ExternalLink, Building2, Monitor,
-  FileText, History
+  FileText, History, ChevronLeft, ChevronRight
 } from "lucide-react";
-import { startOfWeek, endOfWeek, format, addDays, parseISO } from "date-fns";
+import { startOfWeek, endOfWeek, format, addDays, addWeeks, isSameWeek, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
