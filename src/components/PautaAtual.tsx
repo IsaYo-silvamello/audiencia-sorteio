@@ -464,11 +464,49 @@ export default function PautaAtual() {
                             <span className="text-amber-600">⚠ Pendente</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-sm">
+                        <TableCell className="text-sm" onClick={(e) => e.stopPropagation()}>
                           {aud.preposto ? (
                             <span className="text-emerald-700 dark:text-emerald-300">{aud.preposto}</span>
                           ) : (
-                            <span className="text-amber-600">⚠ Pendente</span>
+                            <Popover open={assigningPreposto === aud.id} onOpenChange={(open) => setAssigningPreposto(open ? aud.id : null)}>
+                              <PopoverTrigger asChild>
+                                <button className="text-amber-600 hover:text-amber-700 hover:underline cursor-pointer flex items-center gap-1 text-sm">
+                                  <UserCheck className="h-3 w-3" /> Atribuir preposto
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-72 p-0" align="start">
+                                <div className="p-3 border-b">
+                                  <p className="text-sm font-medium">Selecionar Preposto</p>
+                                  <p className="text-xs text-muted-foreground">Cliente: {aud.reu || "—"}</p>
+                                </div>
+                                <ScrollArea className="max-h-[250px]">
+                                  <div className="p-1">
+                                    {getPrepostosOrdenados(aud).length === 0 ? (
+                                      <p className="text-sm text-muted-foreground p-3 text-center">Nenhum preposto disponível</p>
+                                    ) : (
+                                      getPrepostosOrdenados(aud).map(p => (
+                                        <button
+                                          key={p.id}
+                                          onClick={() => handleAssignPreposto(aud.id, p.nome)}
+                                          className="w-full flex items-center justify-between px-3 py-2 rounded-md text-sm hover:bg-muted transition-colors text-left"
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            {p.isClienteMatch && <Star className="h-3 w-3 text-amber-500 fill-amber-500 shrink-0" />}
+                                            <span className="font-medium">{p.nome}</span>
+                                          </div>
+                                          <div className="flex items-center gap-2 shrink-0">
+                                            {p.isClienteMatch && (
+                                              <Badge className="text-[9px] bg-amber-100 text-amber-700 border-amber-300">Cliente</Badge>
+                                            )}
+                                            <Badge variant="outline" className="text-[9px]">{p.count}/3</Badge>
+                                          </div>
+                                        </button>
+                                      ))
+                                    )}
+                                  </div>
+                                </ScrollArea>
+                              </PopoverContent>
+                            </Popover>
                           )}
                         </TableCell>
                         <TableCell>
