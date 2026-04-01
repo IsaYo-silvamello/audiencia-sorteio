@@ -36,6 +36,14 @@ const HEADER_MAP: Record<string, string> = {
   "OBSERVAÇÃO PROCESSO": "observacoes",
   "OBSERVACAO PROCESSO": "observacoes",
 
+  // ===== planilha MELI (exp_) =====
+  DATAPRAZO: "data_audiencia",
+  "DATA PRAZO": "data_audiencia",
+  "DATA DO PRAZO": "data_audiencia",
+  "HORA DO PRAZO": "hora_audiencia",
+  "OBSERVAÇÃO DO PRAZO": "observacoes",
+  "OBSERVACAO DO PRAZO": "observacoes",
+
   // ===== modelo pauta =====
   ID: "id_planilha",
   "NPC/DOSSIÊ": "npc_dossie",
