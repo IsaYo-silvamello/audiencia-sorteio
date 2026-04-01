@@ -251,6 +251,7 @@ const ImportacaoSegura = ({ onImportComplete }: { onImportComplete?: () => void 
     setResult(null);
     setDescartados([]);
     setShowDescartados(false);
+    localStorage.removeItem("ultimosDescartados");
     setImportProgress(0);
     setImportStatus("Lendo planilhas...");
 
