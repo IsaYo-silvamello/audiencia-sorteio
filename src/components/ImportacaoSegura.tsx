@@ -422,6 +422,12 @@ const ImportacaoSegura = ({ onImportComplete }: { onImportComplete?: () => void 
         updated: totalUpdated,
       });
 
+      // Persistir descartados no localStorage
+      setDescartados(prev => {
+        localStorage.setItem("ultimosDescartados", JSON.stringify(prev));
+        return prev;
+      });
+
       const { error: historicoError } = await supabase.from("historico_importacoes").insert({
         arquivos: fileNames.join(", "),
         total_registros: totalRows,
