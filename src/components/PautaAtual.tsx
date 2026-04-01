@@ -17,6 +17,7 @@ import {
 import { startOfWeek, endOfWeek, format, addDays, addWeeks, isSameWeek, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { identificarCliente } from "@/hooks/useSorteio";
 
 function normalize(s: string): string {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
@@ -177,13 +178,15 @@ export default function PautaAtual() {
 
   // Get sorted prepostos for a given audiencia (client match first)
   const getPrepostosOrdenados = useCallback((aud: Audiencia) => {
-    const clienteAud = normalize(aud.reu || "");
+    const clienteConglomerado = identificarCliente(aud.reu);
     return prepostos
       .map(p => {
         const nomeNorm = normalize(p.nome);
         const count = prepostoContagem[nomeNorm] || 0;
         const equipes = (p.equipe || "").split(",").map(e => normalize(e.trim())).filter(Boolean);
-        const isClienteMatch = equipes.some(eq => clienteAud.includes(eq) || eq.includes(clienteAud));
+        const isClienteMatch = clienteConglomerado
+          ? equipes.some(eq => normalize(clienteConglomerado).includes(eq) || eq.includes(normalize(clienteConglomerado)))
+          : false;
         return { ...p, count, isClienteMatch, disponivel: count < 3 };
       })
       .filter(p => p.disponivel)

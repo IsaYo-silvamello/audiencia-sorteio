@@ -116,18 +116,26 @@ function getEquipeCorrespondente(uf: string | null): string {
   return "Equipe Thiago";
 }
 
-// ─── Detecção de cliente a partir do campo réu ─────────────
+// ─── Detecção de cliente (conglomerado) a partir do campo réu ──
 
-function detectarCliente(reu: string | null): string | null {
+export function identificarCliente(reu: string | null): string | null {
   if (!reu) return null;
   const r = normalize(reu);
-  if (r.includes("ITAU") || r.includes("BMG")) return "ITAÚ";
-  if (r.includes("VIVO") || r.includes("TELEFONICA")) return "VIVO";
+  // ITAU: inclui todo conglomerado (Itaú, Itaucard, LuizaCred, Magazine Luiza, Itaú Seguros)
+  if (r.includes("ITAU") || r.includes("LUIZACRED") || r.includes("MAGAZINE LUIZA")) return "ITAÚ";
+  // MELI: Mercado Livre, Mercado Pago, Ebazar
+  if (r.includes("MERCADO") || r.includes("EBAZAR") || r.includes("MELI")) return "MELI";
+  // VIVO: Telefônica Brasil
+  if (r.includes("VIVO") || r.includes("TELEFONICA") || r.includes("TELEFONICA")) return "VIVO";
   if (r.includes("BRADESCO")) return "BRADESCO";
-  if (r.includes("MELI") || r.includes("MERCADO LIVRE") || r.includes("MERCADOLIVRE")) return "MELI";
   if (r.includes("ELETROBR")) return "ELETROBRÁS";
   if (r.includes("HEMERA")) return "HEMERA";
   return null;
+}
+
+// Alias for backward compatibility
+function detectarCliente(reu: string | null): string | null {
+  return identificarCliente(reu);
 }
 
 // ─── Verificação SE (Superendividamento) ───────────────────
