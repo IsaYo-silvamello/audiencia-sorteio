@@ -1,44 +1,23 @@
 
 
-## Plano: Implementar mapeamento de conglomerados para distribuição
+## Plano: Registrar audiências descartadas com log clicável
 
-### Problema
+### Mudanças no arquivo `src/components/ImportacaoSegura.tsx`
 
-O sistema atual compara diretamente o nome do réu com a equipe do advogado. Porém, os clientes são na verdade conglomerados com múltiplas empresas:
+**1. Estado para armazenar descartados**
+- Novo state `descartados` — array de objetos `{ npc, autor, reu, tipo, motivo }` coletados durante a importação.
+- Novo state `showDescartados` (boolean) para controlar a exibição do log.
 
-- Réu "BANCO ITAU S.A" precisa ser reconhecido como cliente **ITAU**
-- Réu "EBAZAR" precisa ser reconhecido como cliente **MELI**
-- Réu "TELEFÔNICA BRASIL S.A" precisa ser reconhecido como cliente **VIVO**
+**2. Captura durante importação (linhas 334-338)**
+- Onde hoje faz `continue` para sessões de julgamento, antes do `continue`, fazer `push` no array de descartados com os dados da linha: NPC/Dossiê, Autor, Réu, Tipo da Audiência e Motivo ("Sessão de Julgamento — não é audiência efetiva").
 
-Sem esse mapeamento, a distribuição por prioridade de cliente não funciona corretamente.
-
-### Solução
-
-**Arquivo: `src/hooks/useSorteio.ts`**
-
-Criar uma função `identificarCliente(reu: string): string` que recebe o nome do réu e retorna o código do conglomerado:
-
-```text
-ITAU  ← contém: ITAU, ITAUCARD, LUIZACRED, MAGAZINE LUIZA
-MELI  ← contém: MERCADO, EBAZAR, MELI
-VIVO  ← contém: TELEFÔNICA, TELEFONICA, VIVO
-BRADESCO ← contém: BRADESCO
-ELETROBRÁS ← contém: ELETROBRAS, ELETROBRÁS
-HEMERA ← contém: HEMERA
-```
-
-Substituir todas as comparações de cliente no fluxo de distribuição para usar essa função, garantindo que:
-- Advogado da equipe MELI receba audiências de EBAZAR, MERCADO PAGO, etc.
-- Advogado da equipe ITAU receba audiências de LUIZACRED, MAGAZINE LUIZA, ITAUCARD, etc.
-- Advogado da equipe VIVO receba audiências de TELEFÔNICA BRASIL, etc.
-
-**Arquivo: `src/components/PautaAtual.tsx`**
-
-Usar a mesma função para exibir o badge de cliente corretamente nos cards de audiência.
+**3. Exibição no resultado da importação (após o bloco de sucesso, ~linha 510-517)**
+- Se houver descartados, substituir/complementar a linha de "inconsistências" com um texto clicável: "X registro(s) descartado(s)" com um botão/link discreto "Ver detalhes".
+- Ao clicar, abre um Collapsible ou Dialog listando cada registro descartado em uma tabela simples (NPC, Autor, Réu, Tipo, Motivo).
 
 ### Detalhes técnicos
-
-- Função com matching case-insensitive usando `.toUpperCase()` e `.includes()`
-- Fallback: se nenhum conglomerado for identificado, retorna o próprio nome do réu
-- Aplicar em: `executarSorteio()` onde compara `equipe` do advogado com o cliente da audiência
+- Usar `Collapsible` do shadcn (já existe no projeto) para manter discreto
+- Ícone `EyeOff` ou `Filter` do lucide para indicar "descartados"
+- Resetar `descartados` no início de cada importação junto com `result`
+- Não altera banco de dados — tudo em memória local durante a sessão
 
