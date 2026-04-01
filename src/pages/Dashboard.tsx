@@ -18,6 +18,7 @@ import smaartLogo from "@/assets/smaart-logo.png";
 
 const MENU_ITEMS = [
   { key: "home", label: "Home", icon: LayoutGrid },
+  { key: "pauta", label: "Pauta Atual", icon: FileText },
   { key: "importacao", label: "Importar Pauta", icon: Upload },
   { key: "sorteio", label: "Distribuição", icon: Shuffle },
   { key: "audiencias", label: "Audiências", icon: Scale },
