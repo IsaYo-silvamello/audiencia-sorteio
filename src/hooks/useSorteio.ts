@@ -401,10 +401,14 @@ export function useSorteio() {
             equipeRecomendada: equipe,
           });
 
-          await supabase
-            .from("audiencias")
-            .update({ status: "presencial", observacoes: `Correspondente: ${equipe}` })
-            .eq("id", aud.id);
+          try {
+            await supabase
+              .from("audiencias")
+              .update({ status: "presencial", observacoes: `Correspondente: ${equipe}` })
+              .eq("id", aud.id);
+          } catch (e) {
+            console.error("Erro ao atualizar audiência presencial:", aud.id, e);
+          }
           continue;
         }
 
