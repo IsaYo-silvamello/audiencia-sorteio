@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
-  LayoutGrid, Upload, Shuffle, Scale, Calendar, Users, Settings, ChevronLeft, ChevronRight,
+  LayoutGrid, Upload, Shuffle, Scale, Calendar, Users, Settings, ChevronLeft, ChevronRight, FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AudienciasList from "@/components/AudienciasList";
