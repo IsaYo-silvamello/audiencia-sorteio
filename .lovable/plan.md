@@ -1,36 +1,50 @@
 
 
-## Plano: Corrigir erro na distribuição — constraint de status
+## Plano: Corrigir placeholder de horário que impede distribuição
 
-### Problema encontrado
+### Problema
 
-A tabela `audiencias` tem uma constraint (`audiencias_status_check`) que só permite os valores: `pendente`, `atribuida`, `realizada`.
-
-O código de distribuição tenta atualizar o status para `"presencial"` nas audiências presenciais/fora do expediente. Isso causa um erro no banco de dados que interrompe todo o sorteio. São dezenas de erros registrados no log do banco.
+182 audiências da semana 06/04-12/04 têm `hora_audiencia = '00:01:00'` (valor placeholder importado da planilha). A função `foraDoExpediente()` trata isso como "antes das 09:00" e encaminha para correspondente, impedindo a distribuição para advogados/prepostos.
 
 ### Solução
 
-Duas mudanças necessárias:
+Em `src/hooks/useSorteio.ts`, atualizar a função `foraDoExpediente` para ignorar horários placeholder conhecidos (`00:00:00`, `00:01:00`, `23:59:00`). Esses valores não representam horários reais e devem ser tratados como "horário desconhecido" (dentro do expediente por padrão).
 
-**1. Migração: adicionar "presencial" à constraint**
+### Mudança
 
-```sql
-ALTER TABLE audiencias DROP CONSTRAINT audiencias_status_check;
-ALTER TABLE audiencias ADD CONSTRAINT audiencias_status_check 
-  CHECK (status IN ('pendente', 'atribuida', 'realizada', 'presencial'));
+**Arquivo:** `src/hooks/useSorteio.ts` (linhas 66-69)
+
+Alterar de:
+```typescript
+function foraDoExpediente(hora: string | null): boolean {
+  if (!hora) return false;
+  return hora < "09:00" || hora >= "18:00";
+}
 ```
 
-**2. Código: tratar erros individuais sem parar o loop**
-
-Em `src/hooks/useSorteio.ts`, envolver cada `update` da audiência em try/catch individual para que um erro em uma audiência não interrompa as demais. Atualmente, o primeiro erro na atualização de status para "presencial" lança uma exceção que pula todo o `catch` do sorteio.
-
-### Detalhes técnicos
-
-- Arquivo: `src/hooks/useSorteio.ts` (linhas 404-408 e 473-481)
-- Migração SQL para alterar a constraint
-- Envolver os `await supabase.from("audiencias").update(...)` em blocos try/catch individuais dentro do loop `for`
+Para:
+```typescript
+function foraDoExpediente(hora: string | null): boolean {
+  if (!hora) return false;
+  // Ignorar horários placeholder da planilha
+  const placeholders = ["00:00:00", "00:01:00", "23:59:00", "00:00", "00:01", "23:59"];
+  if (placeholders.includes(hora)) return false;
+  return hora < "09:00" || hora >= "18:00";
+}
+```
 
 ### Resultado esperado
 
-Após a correção, o sorteio vai processar todas as 237 audiências pendentes da semana 06/04-12/04, atribuindo advogados e prepostos conforme as regras de prioridade, e marcando as presenciais como "presencial" sem erro.
+As 179 audiências virtuais com horário "00:01:00" passarão a ser distribuídas normalmente para advogados e prepostos. Apenas audiências com horário real fora do expediente (ex: 07:30, 19:00) serão encaminhadas para correspondente.
+
+### Ação necessária antes de re-testar
+
+Como as 237 audiências já foram marcadas como "presencial" no banco, será preciso resetá-las para "pendente" para poder redistribuir. Isso será feito via migração SQL:
+```sql
+UPDATE audiencias SET status = 'pendente', observacoes = NULL 
+WHERE data_audiencia >= '2026-04-06' AND data_audiencia <= '2026-04-12' 
+AND status = 'presencial';
+```
+
+Também limpar o registro do histórico de sorteios dessa semana e as atribuições correspondentes.
 
