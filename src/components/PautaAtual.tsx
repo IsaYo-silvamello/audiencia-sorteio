@@ -68,15 +68,26 @@ function isPresencial(aud: Audiencia): boolean {
   return true;
 }
 
-function getPendencias(aud: Audiencia): string[] {
+function getPendenciasOnline(aud: Audiencia): string[] {
   const pends: string[] = [];
   if (!aud.adv_responsavel) pends.push("Sem advogado");
   if (!aud.preposto) pends.push("Sem preposto");
-  if (!isPresencial(aud) && !aud.link) pends.push("Sem link");
-  if (isPresencial(aud) && !aud.foro) pends.push("Sem foro");
+  if (!aud.link) pends.push("Sem link");
   const hora = aud.hora_audiencia || "";
   if (!hora || hora === "00:01:00" || hora === "00:00:00") pends.push("Sem horário");
   return pends;
+}
+
+function getPendenciasPresencial(aud: Audiencia): string[] {
+  const pends: string[] = [];
+  if (!aud.foro) pends.push("Sem foro");
+  const hora = aud.hora_audiencia || "";
+  if (!hora || hora === "00:01:00" || hora === "00:00:00") pends.push("Sem horário");
+  return pends;
+}
+
+function getPendencias(aud: Audiencia): string[] {
+  return isPresencial(aud) ? getPendenciasPresencial(aud) : getPendenciasOnline(aud);
 }
 
 const DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
