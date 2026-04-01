@@ -149,6 +149,22 @@ const SorteioAudiencias = ({ onSorteioComplete }: SorteioAudienciasProps) => {
         </CardContent>
       </Card>
 
+      {/* Loading durante execução */}
+      {status === "executando" && (
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex flex-col items-center gap-4 py-6">
+              <Loader2 className="h-10 w-10 text-primary animate-spin" />
+              <div className="text-center space-y-2 w-full">
+                <p className="text-sm font-medium text-foreground">Realizando distribuição de audiências...</p>
+                <p className="text-xs text-muted-foreground">Aguarde enquanto os advogados e prepostos são atribuídos</p>
+                <Progress value={undefined} className="w-full max-w-md mx-auto h-2 animate-pulse" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Semanas já sorteadas */}
       {semanasSorteadas.length > 0 && (
         <Card>
