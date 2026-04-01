@@ -6,15 +6,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Calendar, Clock, Users, AlertTriangle, CheckCircle2,
   Link2, MapPin, Pencil, ExternalLink, Building2, Monitor,
-  FileText, History, ChevronLeft, ChevronRight
+  FileText, History, ChevronLeft, ChevronRight, Star, UserCheck
 } from "lucide-react";
 import { startOfWeek, endOfWeek, format, addDays, addWeeks, isSameWeek, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+
+function normalize(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+}
 
 interface Audiencia {
   id: string;
@@ -45,6 +51,14 @@ interface HistoricoSorteio {
   semana_inicio: string | null;
 }
 
+interface Pessoa {
+  id: string;
+  nome: string;
+  tipo: string;
+  equipe: string | null;
+  ativo: boolean;
+}
+
 function isPresencial(aud: Audiencia): boolean {
   const tipo = (aud.tipo_audiencia || "").toLowerCase();
   const local = (aud.local || "").toLowerCase();
@@ -69,12 +83,14 @@ const DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 export default function PautaAtual() {
   const [audiencias, setAudiencias] = useState<Audiencia[]>([]);
+  const [prepostos, setPrepostos] = useState<Pessoa[]>([]);
   const [ultimaDistribuicao, setUltimaDistribuicao] = useState<HistoricoSorteio | null>(null);
   const [editAud, setEditAud] = useState<Audiencia | null>(null);
   const [editForm, setEditForm] = useState<Partial<Audiencia>>({});
   const [saving, setSaving] = useState(false);
   const [semanaAtual, setSemanaAtual] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
+  const [assigningPreposto, setAssigningPreposto] = useState<string | null>(null);
 
   // On mount: find the latest distribution week, default to current week
   useEffect(() => {
@@ -108,7 +124,7 @@ export default function PautaAtual() {
   }, [inicio, fim]);
 
   const fetchData = useCallback(async () => {
-    const [{ data: auds }, { data: hist }] = await Promise.all([
+    const [{ data: auds }, { data: hist }, { data: pessoasData }] = await Promise.all([
       supabase
         .from("audiencias")
         .select("id, autor, reu, data_audiencia, hora_audiencia, tipo_audiencia, local, foro, link, status, carteira, numero_processo, advogado, preposto, npc_dossie, adv_responsavel")
@@ -120,10 +136,60 @@ export default function PautaAtual() {
         .eq("semana_inicio", inicioStr)
         .order("executado_em", { ascending: false })
         .limit(1),
+      supabase
+        .from("pessoas")
+        .select("id, nome, tipo, equipe, ativo")
+        .eq("tipo", "preposto")
+        .eq("ativo", true),
     ]);
     setAudiencias(auds || []);
+    setPrepostos(pessoasData || []);
     setUltimaDistribuicao(hist && hist.length > 0 ? hist[0] : null);
   }, [inicioStr, fimStr]);
+
+  // Count how many audiencias each preposto has this week
+  const prepostoContagem = useMemo(() => {
+    const contagem: Record<string, number> = {};
+    audiencias.forEach(a => {
+      if (a.preposto) {
+        const key = normalize(a.preposto);
+        contagem[key] = (contagem[key] || 0) + 1;
+      }
+    });
+    return contagem;
+  }, [audiencias]);
+
+  // Get sorted prepostos for a given audiencia (client match first)
+  const getPrepostosOrdenados = useCallback((aud: Audiencia) => {
+    const clienteAud = normalize(aud.reu || "");
+    return prepostos
+      .map(p => {
+        const nomeNorm = normalize(p.nome);
+        const count = prepostoContagem[nomeNorm] || 0;
+        const equipes = (p.equipe || "").split(",").map(e => normalize(e.trim())).filter(Boolean);
+        const isClienteMatch = equipes.some(eq => clienteAud.includes(eq) || eq.includes(clienteAud));
+        return { ...p, count, isClienteMatch, disponivel: count < 3 };
+      })
+      .filter(p => p.disponivel)
+      .sort((a, b) => {
+        if (a.isClienteMatch !== b.isClienteMatch) return a.isClienteMatch ? -1 : 1;
+        return a.count - b.count;
+      });
+  }, [prepostos, prepostoContagem]);
+
+  const handleAssignPreposto = async (audId: string, prepostoNome: string) => {
+    const { error } = await supabase
+      .from("audiencias")
+      .update({ preposto: prepostoNome })
+      .eq("id", audId);
+    if (error) {
+      toast.error("Erro ao atribuir preposto: " + error.message);
+    } else {
+      toast.success(`Preposto ${prepostoNome} atribuído!`);
+      setAssigningPreposto(null);
+      fetchData();
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -398,11 +464,49 @@ export default function PautaAtual() {
                             <span className="text-amber-600">⚠ Pendente</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-sm">
+                        <TableCell className="text-sm" onClick={(e) => e.stopPropagation()}>
                           {aud.preposto ? (
                             <span className="text-emerald-700 dark:text-emerald-300">{aud.preposto}</span>
                           ) : (
-                            <span className="text-amber-600">⚠ Pendente</span>
+                            <Popover open={assigningPreposto === aud.id} onOpenChange={(open) => setAssigningPreposto(open ? aud.id : null)}>
+                              <PopoverTrigger asChild>
+                                <button className="text-amber-600 hover:text-amber-700 hover:underline cursor-pointer flex items-center gap-1 text-sm">
+                                  <UserCheck className="h-3 w-3" /> Atribuir preposto
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-72 p-0" align="start">
+                                <div className="p-3 border-b">
+                                  <p className="text-sm font-medium">Selecionar Preposto</p>
+                                  <p className="text-xs text-muted-foreground">Cliente: {aud.reu || "—"}</p>
+                                </div>
+                                <ScrollArea className="max-h-[250px]">
+                                  <div className="p-1">
+                                    {getPrepostosOrdenados(aud).length === 0 ? (
+                                      <p className="text-sm text-muted-foreground p-3 text-center">Nenhum preposto disponível</p>
+                                    ) : (
+                                      getPrepostosOrdenados(aud).map(p => (
+                                        <button
+                                          key={p.id}
+                                          onClick={() => handleAssignPreposto(aud.id, p.nome)}
+                                          className="w-full flex items-center justify-between px-3 py-2 rounded-md text-sm hover:bg-muted transition-colors text-left"
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            {p.isClienteMatch && <Star className="h-3 w-3 text-amber-500 fill-amber-500 shrink-0" />}
+                                            <span className="font-medium">{p.nome}</span>
+                                          </div>
+                                          <div className="flex items-center gap-2 shrink-0">
+                                            {p.isClienteMatch && (
+                                              <Badge className="text-[9px] bg-amber-100 text-amber-700 border-amber-300">Cliente</Badge>
+                                            )}
+                                            <Badge variant="outline" className="text-[9px]">{p.count}/3</Badge>
+                                          </div>
+                                        </button>
+                                      ))
+                                    )}
+                                  </div>
+                                </ScrollArea>
+                              </PopoverContent>
+                            </Popover>
                           )}
                         </TableCell>
                         <TableCell>
