@@ -1,50 +1,19 @@
 
 
-## Plano: Corrigir placeholder de horário que impede distribuição
+## Plano: Adicionar loading na Distribuição e Histórico de Distribuições
 
-### Problema
+### Mudanças
 
-182 audiências da semana 06/04-12/04 têm `hora_audiencia = '00:01:00'` (valor placeholder importado da planilha). A função `foraDoExpediente()` trata isso como "antes das 09:00" e encaminha para correspondente, impedindo a distribuição para advogados/prepostos.
+**Arquivo: `src/components/SorteioAudiencias.tsx`**
 
-### Solução
+1. Adicionar indicador de loading (spinner + texto) enquanto o sorteio está sendo executado (`status === "executando"`), similar ao progress bar da importação — exibir um bloco com animação e mensagem "Realizando distribuição..."
 
-Em `src/hooks/useSorteio.ts`, atualizar a função `foraDoExpediente` para ignorar horários placeholder conhecidos (`00:00:00`, `00:01:00`, `23:59:00`). Esses valores não representam horários reais e devem ser tratados como "horário desconhecido" (dentro do expediente por padrão).
+2. Adicionar seção "Histórico de Distribuições" no final da página, reutilizando o componente `HistoricoSorteios` que já existe mas não está sendo usado nesta tela. Importar e renderizar abaixo dos resultados, com o mesmo estilo de card usado no histórico de importações (ícone History, título, descrição).
 
-### Mudança
+### Detalhes técnicos
 
-**Arquivo:** `src/hooks/useSorteio.ts` (linhas 66-69)
-
-Alterar de:
-```typescript
-function foraDoExpediente(hora: string | null): boolean {
-  if (!hora) return false;
-  return hora < "09:00" || hora >= "18:00";
-}
-```
-
-Para:
-```typescript
-function foraDoExpediente(hora: string | null): boolean {
-  if (!hora) return false;
-  // Ignorar horários placeholder da planilha
-  const placeholders = ["00:00:00", "00:01:00", "23:59:00", "00:00", "00:01", "23:59"];
-  if (placeholders.includes(hora)) return false;
-  return hora < "09:00" || hora >= "18:00";
-}
-```
-
-### Resultado esperado
-
-As 179 audiências virtuais com horário "00:01:00" passarão a ser distribuídas normalmente para advogados e prepostos. Apenas audiências com horário real fora do expediente (ex: 07:30, 19:00) serão encaminhadas para correspondente.
-
-### Ação necessária antes de re-testar
-
-Como as 237 audiências já foram marcadas como "presencial" no banco, será preciso resetá-las para "pendente" para poder redistribuir. Isso será feito via migração SQL:
-```sql
-UPDATE audiencias SET status = 'pendente', observacoes = NULL 
-WHERE data_audiencia >= '2026-04-06' AND data_audiencia <= '2026-04-12' 
-AND status = 'presencial';
-```
-
-Também limpar o registro do histórico de sorteios dessa semana e as atribuições correspondentes.
+- Importar `HistoricoSorteios` de `@/components/HistoricoSorteios`
+- Importar ícone `Loader2` do lucide-react para o spinner animado
+- Quando `status === "executando"`, mostrar um card com `Loader2` animado + `Progress` indeterminado + texto "Realizando distribuição de audiências..."
+- Renderizar `<HistoricoSorteios />` dentro de um Card com header similar ao da importação (ícone History + título "Histórico de Distribuições")
 
