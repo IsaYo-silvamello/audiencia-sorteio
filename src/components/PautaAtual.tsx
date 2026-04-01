@@ -355,7 +355,7 @@ export default function PautaAtual() {
       </Card>
 
       {/* KPIs */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-5 flex items-center gap-4">
             <div className="h-12 w-12 rounded-xl bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center shrink-0">
@@ -369,23 +369,34 @@ export default function PautaAtual() {
         </Card>
         <Card>
           <CardContent className="p-5 flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl bg-green-50 dark:bg-green-950/50 flex items-center justify-center shrink-0">
-              <CheckCircle2 className="h-6 w-6 text-green-600" />
+            <div className="h-12 w-12 rounded-xl bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center shrink-0">
+              <Monitor className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Completas</p>
-              <p className="text-3xl font-bold text-green-600">{completas}</p>
+              <p className="text-sm text-muted-foreground">Online</p>
+              <p className="text-3xl font-bold text-blue-600">{audienciasOnline.length}</p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-5 flex items-center gap-4">
-            <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${pendentes > 0 ? "bg-amber-50 dark:bg-amber-950/50" : "bg-green-50 dark:bg-green-950/50"}`}>
-              <AlertTriangle className={`h-6 w-6 ${pendentes > 0 ? "text-amber-600" : "text-green-600"}`} />
+            <div className="h-12 w-12 rounded-xl bg-orange-50 dark:bg-orange-950/50 flex items-center justify-center shrink-0">
+              <Building2 className="h-6 w-6 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Presencial</p>
+              <p className="text-3xl font-bold text-orange-600">{audienciasPresencial.length}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${(pendentesOnline + pendentesPresencial) > 0 ? "bg-amber-50 dark:bg-amber-950/50" : "bg-green-50 dark:bg-green-950/50"}`}>
+              <AlertTriangle className={`h-6 w-6 ${(pendentesOnline + pendentesPresencial) > 0 ? "text-amber-600" : "text-green-600"}`} />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Pendentes</p>
-              <p className={`text-3xl font-bold ${pendentes > 0 ? "text-amber-600" : "text-green-600"}`}>{pendentes}</p>
+              <p className={`text-3xl font-bold ${(pendentesOnline + pendentesPresencial) > 0 ? "text-amber-600" : "text-green-600"}`}>{pendentesOnline + pendentesPresencial}</p>
             </div>
           </CardContent>
         </Card>
@@ -399,17 +410,12 @@ export default function PautaAtual() {
         <CardContent>
           <div className="grid grid-cols-5 gap-3">
             {resumoPorDia.map((dia) => (
-              <div
-                key={dia.label}
-                className="rounded-xl border p-4 text-center space-y-1"
-              >
+              <div key={dia.label} className="rounded-xl border p-4 text-center space-y-1">
                 <p className="text-xs text-muted-foreground font-medium">{dia.label}</p>
                 <p className="text-sm text-muted-foreground">{format(dia.data, "dd/MM")}</p>
                 <p className="text-2xl font-bold">{dia.total}</p>
                 {dia.pendentes > 0 ? (
-                  <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300">
-                    {dia.pendentes} pend.
-                  </Badge>
+                  <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300">{dia.pendentes} pend.</Badge>
                 ) : dia.total > 0 ? (
                   <Badge className="text-[10px] bg-green-100 text-green-700 border-green-300">OK</Badge>
                 ) : null}
@@ -419,21 +425,23 @@ export default function PautaAtual() {
         </CardContent>
       </Card>
 
-      {/* Tabela de Pendências */}
-      <Card>
+      {/* ─── SEÇÃO ONLINE ─── */}
+      <Card className="border-2 border-blue-200 dark:border-blue-800">
         <CardHeader className="pb-3 flex flex-row items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-amber-600" />
-          <CardTitle className="text-base">Audiências com Pendências ({comPendencias.length})</CardTitle>
+          <Monitor className="h-5 w-5 text-blue-600" />
+          <div className="flex-1">
+            <CardTitle className="text-base">Audiências Online ({audienciasOnline.length})</CardTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">Advogado e preposto internos • {completasOnline} completas, {pendentesOnline} pendentes</p>
+          </div>
         </CardHeader>
         <CardContent>
-          {comPendencias.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <CheckCircle2 className="h-10 w-10 mx-auto mb-3 text-green-500 opacity-60" />
-              <p className="font-medium">Nenhuma pendência encontrada!</p>
-              <p className="text-sm mt-1">Todas as audiências da semana estão completas.</p>
+          {comPendenciasOnline.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground">
+              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-500 opacity-60" />
+              <p className="font-medium text-sm">Todas as audiências online estão completas!</p>
             </div>
           ) : (
-            <div className="overflow-auto max-h-[50vh]">
+            <div className="overflow-auto max-h-[40vh]">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -449,31 +457,21 @@ export default function PautaAtual() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {comPendencias.map((aud) => {
-                    const pends = getPendencias(aud);
-                    const online = !isPresencial(aud);
+                  {comPendenciasOnline.map((aud) => {
+                    const pends = getPendenciasOnline(aud);
                     return (
                       <TableRow key={aud.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openEdit(aud)}>
-                        <TableCell className="text-sm font-mono font-bold text-primary">
-                          {aud.npc_dossie || "—"}
-                        </TableCell>
-                        <TableCell className="text-sm font-medium max-w-[160px] truncate">
-                          {aud.reu || "—"}
-                        </TableCell>
+                        <TableCell className="text-sm font-mono font-bold text-primary">{aud.npc_dossie || "—"}</TableCell>
+                        <TableCell className="text-sm font-medium max-w-[160px] truncate">{aud.reu || "—"}</TableCell>
                         <TableCell className="whitespace-nowrap text-sm">
-                          {aud.data_audiencia
-                            ? format(new Date(aud.data_audiencia + "T00:00:00"), "dd/MM", { locale: ptBR })
-                            : "—"}
+                          {aud.data_audiencia ? format(new Date(aud.data_audiencia + "T00:00:00"), "dd/MM", { locale: ptBR }) : "—"}
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-sm">
                           {aud.hora_audiencia && aud.hora_audiencia !== "00:01:00" && aud.hora_audiencia !== "00:00:00"
-                            ? aud.hora_audiencia.slice(0, 5)
-                            : <span className="text-amber-600">—</span>}
+                            ? aud.hora_audiencia.slice(0, 5) : <span className="text-amber-600">—</span>}
                         </TableCell>
                         <TableCell className="text-xs">
-                          <Badge variant="outline" className="text-[10px]">
-                            {aud.tipo_audiencia || "—"}
-                          </Badge>
+                          <Badge variant="outline" className="text-[10px]">{aud.tipo_audiencia || "—"}</Badge>
                         </TableCell>
                         <TableCell className="text-sm">
                           {aud.adv_responsavel ? (
@@ -503,19 +501,14 @@ export default function PautaAtual() {
                                       <p className="text-sm text-muted-foreground p-3 text-center">Nenhum preposto disponível</p>
                                     ) : (
                                       getPrepostosOrdenados(aud).map(p => (
-                                        <button
-                                          key={p.id}
-                                          onClick={() => handleAssignPreposto(aud.id, p.nome)}
-                                          className="w-full flex items-center justify-between px-3 py-2 rounded-md text-sm hover:bg-muted transition-colors text-left"
-                                        >
+                                        <button key={p.id} onClick={() => handleAssignPreposto(aud.id, p.nome)}
+                                          className="w-full flex items-center justify-between px-3 py-2 rounded-md text-sm hover:bg-muted transition-colors text-left">
                                           <div className="flex items-center gap-2">
                                             {p.isClienteMatch && <Star className="h-3 w-3 text-amber-500 fill-amber-500 shrink-0" />}
                                             <span className="font-medium">{p.nome}</span>
                                           </div>
                                           <div className="flex items-center gap-2 shrink-0">
-                                            {p.isClienteMatch && (
-                                              <Badge className="text-[9px] bg-amber-100 text-amber-700 border-amber-300">Cliente</Badge>
-                                            )}
+                                            {p.isClienteMatch && <Badge className="text-[9px] bg-amber-100 text-amber-700 border-amber-300">Cliente</Badge>}
                                             <Badge variant="outline" className="text-[9px]">{p.count}/3</Badge>
                                           </div>
                                         </button>
@@ -530,15 +523,83 @@ export default function PautaAtual() {
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
                             {pends.map((p) => (
-                              <Badge key={p} variant="outline" className="text-[10px] text-amber-600 border-amber-300">
-                                {p}
-                              </Badge>
+                              <Badge key={p} variant="outline" className="text-[10px] text-amber-600 border-amber-300">{p}</Badge>
                             ))}
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                        <TableCell><Pencil className="h-3.5 w-3.5 text-muted-foreground" /></TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ─── SEÇÃO PRESENCIAL ─── */}
+      <Card className="border-2 border-orange-200 dark:border-orange-800">
+        <CardHeader className="pb-3 flex flex-row items-center gap-2">
+          <Building2 className="h-5 w-5 text-orange-600" />
+          <div className="flex-1">
+            <CardTitle className="text-base">Audiências Presenciais ({audienciasPresencial.length})</CardTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">Advogado e preposto serão contratados (correspondente externo) • {completasPresencial} completas, {pendentesPresencial} pendentes</p>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {audienciasPresencial.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground">
+              <p className="text-sm">Nenhuma audiência presencial nesta semana.</p>
+            </div>
+          ) : comPendenciasPresencial.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground">
+              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-500 opacity-60" />
+              <p className="font-medium text-sm">Todas as audiências presenciais estão completas!</p>
+            </div>
+          ) : (
+            <div className="overflow-auto max-h-[40vh]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[90px]">NPC</TableHead>
+                    <TableHead>Réu</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Hora</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Foro / Local</TableHead>
+                    <TableHead>Pendências</TableHead>
+                    <TableHead className="w-[40px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {comPendenciasPresencial.map((aud) => {
+                    const pends = getPendenciasPresencial(aud);
+                    return (
+                      <TableRow key={aud.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openEdit(aud)}>
+                        <TableCell className="text-sm font-mono font-bold text-primary">{aud.npc_dossie || "—"}</TableCell>
+                        <TableCell className="text-sm font-medium max-w-[160px] truncate">{aud.reu || "—"}</TableCell>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {aud.data_audiencia ? format(new Date(aud.data_audiencia + "T00:00:00"), "dd/MM", { locale: ptBR }) : "—"}
                         </TableCell>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {aud.hora_audiencia && aud.hora_audiencia !== "00:01:00" && aud.hora_audiencia !== "00:00:00"
+                            ? aud.hora_audiencia.slice(0, 5) : <span className="text-amber-600">—</span>}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          <Badge variant="outline" className="text-[10px]">{aud.tipo_audiencia || "—"}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {aud.foro || aud.local ? <span>{aud.foro || aud.local}</span> : <span className="text-amber-600">⚠ Sem foro</span>}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {pends.map((p) => (
+                              <Badge key={p} variant="outline" className="text-[10px] text-amber-600 border-amber-300">{p}</Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell><Pencil className="h-3.5 w-3.5 text-muted-foreground" /></TableCell>
                       </TableRow>
                     );
                   })}
