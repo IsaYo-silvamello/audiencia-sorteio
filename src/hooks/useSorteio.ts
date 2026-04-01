@@ -375,12 +375,36 @@ export function useSorteio() {
         .eq("semana_inicio", semanaInicio);
 
       const contagemSemanal: Record<string, number> = {};
-      (atribuicoes || []).forEach((a: any) => {
-        contagemSemanal[a.pessoa_id] = (contagemSemanal[a.pessoa_id] || 0) + 1;
-      });
+      // Contagem diária: pessoaId -> { data -> count }
+      const contagemDiaria: Record<string, Record<string, number>> = {};
 
-      const addContagem = (pessoaId: string) => {
+      // Carregar contagens das atribuições existentes (com data da audiência)
+      if (atribuicoes && atribuicoes.length > 0) {
+        const audienciaIds = atribuicoes.map((a: any) => a.audiencia_id);
+        const { data: audienciasAtrib } = await supabase
+          .from("audiencias")
+          .select("id, data_audiencia")
+          .in("id", audienciaIds);
+
+        const audienciaDataMap: Record<string, string> = {};
+        (audienciasAtrib || []).forEach((a: any) => {
+          if (a.data_audiencia) audienciaDataMap[a.id] = a.data_audiencia;
+        });
+
+        (atribuicoes || []).forEach((a: any) => {
+          contagemSemanal[a.pessoa_id] = (contagemSemanal[a.pessoa_id] || 0) + 1;
+          const dataAud = audienciaDataMap[a.audiencia_id];
+          if (dataAud) {
+            if (!contagemDiaria[a.pessoa_id]) contagemDiaria[a.pessoa_id] = {};
+            contagemDiaria[a.pessoa_id][dataAud] = (contagemDiaria[a.pessoa_id][dataAud] || 0) + 1;
+          }
+        });
+      }
+
+      const addContagem = (pessoaId: string, data: string) => {
         contagemSemanal[pessoaId] = (contagemSemanal[pessoaId] || 0) + 1;
+        if (!contagemDiaria[pessoaId]) contagemDiaria[pessoaId] = {};
+        contagemDiaria[pessoaId][data] = (contagemDiaria[pessoaId][data] || 0) + 1;
       };
 
       const itens: ResultadoItem[] = [];
@@ -457,12 +481,14 @@ export function useSorteio() {
         const advDisponiveis = todosAdvogados.filter((a) => {
           if (!pessoaDisponivel(a.id, diaAudiencia, horaAud)) return false;
           if ((contagemSemanal[a.id] || 0) >= LIMITE_SEMANAL) return false;
+          if ((contagemDiaria[a.id]?.[diaAudiencia] || 0) >= 1) return false;
           return true;
         });
 
         const prepDisponiveis = todosPrepostos.filter((p) => {
           if (!pessoaDisponivel(p.id, diaAudiencia, horaAud)) return false;
           if ((contagemSemanal[p.id] || 0) >= LIMITE_SEMANAL) return false;
+          if ((contagemDiaria[p.id]?.[diaAudiencia] || 0) >= 1) return false;
           return matchCarteiraEquipe(aud.carteira, p.equipe);
         });
 
@@ -499,8 +525,8 @@ export function useSorteio() {
           ? selecionarPorPrioridade(prepDisponiveis, contagemSemanal)
           : null;
 
-        if (advSorteado) addContagem(advSorteado.id);
-        if (prepSorteado) addContagem(prepSorteado.id);
+        if (advSorteado) addContagem(advSorteado.id, diaAudiencia);
+        if (prepSorteado) addContagem(prepSorteado.id, diaAudiencia);
 
         // Salvar atribuições
         const atribBatch: { audiencia_id: string; pessoa_id: string; semana_inicio: string }[] = [];
