@@ -211,10 +211,17 @@ export default function PautaAtual() {
     return () => { supabase.removeChannel(channel); };
   }, [fetchData]);
 
+  const audienciasOnline = useMemo(() => audiencias.filter(a => !isPresencial(a)), [audiencias]);
+  const audienciasPresencial = useMemo(() => audiencias.filter(a => isPresencial(a)), [audiencias]);
+
   const totalAudiencias = audiencias.length;
-  const completas = audiencias.filter(a => getPendencias(a).length === 0).length;
-  const pendentes = totalAudiencias - completas;
-  const comPendencias = useMemo(() => audiencias.filter(a => getPendencias(a).length > 0), [audiencias]);
+  const completasOnline = audienciasOnline.filter(a => getPendenciasOnline(a).length === 0).length;
+  const pendentesOnline = audienciasOnline.length - completasOnline;
+  const completasPresencial = audienciasPresencial.filter(a => getPendenciasPresencial(a).length === 0).length;
+  const pendentesPresencial = audienciasPresencial.length - completasPresencial;
+
+  const comPendenciasOnline = useMemo(() => audienciasOnline.filter(a => getPendenciasOnline(a).length > 0), [audienciasOnline]);
+  const comPendenciasPresencial = useMemo(() => audienciasPresencial.filter(a => getPendenciasPresencial(a).length > 0), [audienciasPresencial]);
 
   // Resumo por dia
   const resumoPorDia = useMemo(() => {
