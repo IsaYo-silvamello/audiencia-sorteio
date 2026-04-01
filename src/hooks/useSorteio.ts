@@ -381,6 +381,12 @@ export function useSorteio() {
       let semDisponivel = 0;
 
       for (const aud of audiencias) {
+        // Ignorar "Sessão de julgamento" — não são audiências efetivas
+        const tipoAudLower = (aud.tipo_audiencia || "").toLowerCase();
+        if (tipoAudLower.includes("sessão de julgamento") || tipoAudLower.includes("sessao de julgamento")) {
+          continue;
+        }
+
         const presencial = isPresencial(aud);
         const diaAudiencia = aud.data_audiencia || "unknown";
         const horaAud = aud.hora_audiencia || null;

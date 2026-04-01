@@ -313,6 +313,12 @@ const ImportacaoSegura = ({ onImportComplete }: { onImportComplete?: () => void 
             }
           }
 
+          // Ignorar "Sessão de julgamento" — não são audiências efetivas
+          const tipoAud = (record.tipo_audiencia || "").toLowerCase();
+          if (tipoAud.includes("sessão de julgamento") || tipoAud.includes("sessao de julgamento")) {
+            continue;
+          }
+
           if (!record.autor) record.autor = "Desconhecido";
           if (!record.reu) record.reu = "Desconhecido";
           if (!record.status) record.status = "pendente";
