@@ -65,6 +65,9 @@ const LIMITE_SEMANAL = 3;
 
 function foraDoExpediente(hora: string | null): boolean {
   if (!hora) return false;
+  // Ignorar horários placeholder da planilha
+  const placeholders = ["00:00:00", "00:01:00", "23:59:00", "00:00", "00:01", "23:59"];
+  if (placeholders.includes(hora)) return false;
   return hora < "09:00" || hora >= "18:00";
 }
 
