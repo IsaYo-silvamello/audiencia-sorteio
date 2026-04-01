@@ -385,14 +385,11 @@ export function useSorteio() {
         const diaAudiencia = aud.data_audiencia || "unknown";
         const horaAud = aud.hora_audiencia || null;
 
-        // ── Presencial ou fora do expediente → correspondente ──
-        if (presencial || foraDoExpediente(horaAud)) {
+        // ── Presencial → NÃO distribui advogado/preposto interno (serão contratados externamente) ──
+        if (presencial) {
           presenciaisCount++;
           const uf = extrairUF(aud.numero_processo);
           const equipe = getEquipeCorrespondente(uf);
-          const razao = presencial
-            ? `Audiência presencial — encaminhar para correspondente (${equipe})`
-            : `Audiência fora do expediente (${horaAud}) — encaminhar para correspondente (${equipe})`;
           itens.push({
             audienciaId: aud.id,
             processo: aud.numero_processo || aud.autor,
@@ -400,17 +397,44 @@ export function useSorteio() {
             presencial: true,
             advogado: null,
             preposto: null,
-            motivo: razao,
+            motivo: `Audiência presencial — advogado e preposto serão contratados (correspondente ${equipe})`,
             equipeRecomendada: equipe,
           });
 
           try {
             await supabase
               .from("audiencias")
-              .update({ status: "presencial", observacoes: `Correspondente: ${equipe}` })
+              .update({ status: "presencial", observacoes: `Presencial — correspondente: ${equipe}` })
               .eq("id", aud.id);
           } catch (e) {
             console.error("Erro ao atualizar audiência presencial:", aud.id, e);
+          }
+          continue;
+        }
+
+        // ── Fora do expediente → correspondente ──
+        if (foraDoExpediente(horaAud)) {
+          presenciaisCount++;
+          const uf = extrairUF(aud.numero_processo);
+          const equipe = getEquipeCorrespondente(uf);
+          itens.push({
+            audienciaId: aud.id,
+            processo: aud.numero_processo || aud.autor,
+            carteira: aud.carteira,
+            presencial: false,
+            advogado: null,
+            preposto: null,
+            motivo: `Audiência fora do expediente (${horaAud}) — encaminhar para correspondente (${equipe})`,
+            equipeRecomendada: equipe,
+          });
+
+          try {
+            await supabase
+              .from("audiencias")
+              .update({ status: "presencial", observacoes: `Fora do expediente — correspondente: ${equipe}` })
+              .eq("id", aud.id);
+          } catch (e) {
+            console.error("Erro ao atualizar audiência fora do expediente:", aud.id, e);
           }
           continue;
         }
