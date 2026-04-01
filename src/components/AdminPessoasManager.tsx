@@ -51,11 +51,7 @@ interface Afastamento {
   horario_especial_fim: string | null;
 }
 
-const CLIENTES_PREPOSTO = [
-  "Acordos", "AUDIÊNCIAS", "BRADESCO", "Eletrobrás", "GERAL", "ITAÚ", "ITAÚ - CARTÕES",
-  "ITAÚ - Fraudes", "ITAÚ - SB/FRAUDE/CONSIGNADO", "ITAÚ - SUPERENDIVIDAMENTO",
-  "ITAÚ JV", "MELI", "PLANOS ECONÔMICOS", "VIVO",
-];
+// Prepostos usam a mesma lista de clientes (EQUIPES) dos advogados
 
 const EQUIPES = ["ELETROBRÁS", "ITAÚ", "MELI", "BRADESCO", "VIVO", "HEMERA"];
 
