@@ -36,6 +36,14 @@ const HEADER_MAP: Record<string, string> = {
   "OBSERVAÇÃO PROCESSO": "observacoes",
   "OBSERVACAO PROCESSO": "observacoes",
 
+  // ===== planilha MELI (exp_) =====
+  DATAPRAZO: "data_audiencia",
+  "DATA PRAZO": "data_audiencia",
+  "DATA DO PRAZO": "data_audiencia",
+  "HORA DO PRAZO": "hora_audiencia",
+  "OBSERVAÇÃO DO PRAZO": "observacoes",
+  "OBSERVACAO DO PRAZO": "observacoes",
+
   // ===== modelo pauta =====
   ID: "id_planilha",
   "NPC/DOSSIÊ": "npc_dossie",
@@ -88,6 +96,16 @@ function parseExcelDate(value: any): string | null {
   const brDateTimeMatch = str.match(/^(\d{2})\/(\d{2})\/(\d{4})\s/);
   if (brDateTimeMatch) {
     return `${brDateTimeMatch[3]}-${brDateTimeMatch[2]}-${brDateTimeMatch[1]}`;
+  }
+
+  // Formato americano curto M/D/YY ou M/D/YYYY (ex: 4/6/26 → 2026-04-06)
+  const usShortMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (usShortMatch) {
+    let year = parseInt(usShortMatch[3]);
+    if (year < 100) year += 2000;
+    const month = String(parseInt(usShortMatch[1])).padStart(2, "0");
+    const day = String(parseInt(usShortMatch[2])).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   }
 
   if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
