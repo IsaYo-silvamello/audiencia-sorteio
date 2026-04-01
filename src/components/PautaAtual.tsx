@@ -73,11 +73,33 @@ export default function PautaAtual() {
   const [editAud, setEditAud] = useState<Audiencia | null>(null);
   const [editForm, setEditForm] = useState<Partial<Audiencia>>({});
   const [saving, setSaving] = useState(false);
+  const [semanaAtual, setSemanaAtual] = useState<Date | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const inicio = useMemo(() => startOfWeek(new Date(), { weekStartsOn: 0 }), []);
-  const fim = useMemo(() => endOfWeek(new Date(), { weekStartsOn: 0 }), []);
+  // On mount: find the latest distribution week, default to current week
+  useEffect(() => {
+    async function init() {
+      const { data } = await supabase
+        .from("historico_sorteios")
+        .select("semana_inicio")
+        .order("executado_em", { ascending: false })
+        .limit(1);
+      if (data && data.length > 0 && data[0].semana_inicio) {
+        setSemanaAtual(startOfWeek(parseISO(data[0].semana_inicio), { weekStartsOn: 0 }));
+      } else {
+        setSemanaAtual(startOfWeek(new Date(), { weekStartsOn: 0 }));
+      }
+      setLoading(false);
+    }
+    init();
+  }, []);
+
+  const inicio = useMemo(() => semanaAtual || startOfWeek(new Date(), { weekStartsOn: 0 }), [semanaAtual]);
+  const fim = useMemo(() => endOfWeek(inicio, { weekStartsOn: 0 }), [inicio]);
   const inicioStr = useMemo(() => format(inicio, "yyyy-MM-dd"), [inicio]);
   const fimStr = useMemo(() => format(fim, "yyyy-MM-dd"), [fim]);
+
+  const isCurrentWeek = useMemo(() => isSameWeek(new Date(), inicio, { weekStartsOn: 0 }), [inicio]);
 
   const semanaLabel = useMemo(() => {
     const seg = addDays(inicio, 1);
