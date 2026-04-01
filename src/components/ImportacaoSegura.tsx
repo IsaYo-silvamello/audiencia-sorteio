@@ -503,10 +503,10 @@ const ImportacaoSegura = ({ onImportComplete }: { onImportComplete?: () => void 
                     variant="outline"
                     size="sm"
                     className="w-full"
-                    onClick={() => navigate("/?tab=audiencias")}
+                    onClick={() => navigate("/?tab=sorteio")}
                   >
                     <ArrowRight className="mr-1.5 h-4 w-4" />
-                    Ir para Audiências
+                    Ir para Distribuição
                   </Button>
                 </div>
               </div>
