@@ -83,12 +83,14 @@ const DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 export default function PautaAtual() {
   const [audiencias, setAudiencias] = useState<Audiencia[]>([]);
+  const [prepostos, setPrepostos] = useState<Pessoa[]>([]);
   const [ultimaDistribuicao, setUltimaDistribuicao] = useState<HistoricoSorteio | null>(null);
   const [editAud, setEditAud] = useState<Audiencia | null>(null);
   const [editForm, setEditForm] = useState<Partial<Audiencia>>({});
   const [saving, setSaving] = useState(false);
   const [semanaAtual, setSemanaAtual] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
+  const [assigningPreposto, setAssigningPreposto] = useState<string | null>(null);
 
   // On mount: find the latest distribution week, default to current week
   useEffect(() => {
