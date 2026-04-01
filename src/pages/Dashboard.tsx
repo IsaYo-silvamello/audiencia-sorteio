@@ -109,6 +109,7 @@ const Dashboard = () => {
       <main className="flex-1 overflow-y-scroll h-screen">
         <div className="max-w-[1400px] mx-auto px-6 py-6">
           {activeTab === "home" && <DashboardHome key={refreshKey} />}
+          {activeTab === "pauta" && <PautaAtual key={refreshKey} />}
           {activeTab === "importacao" && (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Importação de Planilha</h2>
