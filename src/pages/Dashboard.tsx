@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
-  LayoutGrid, Upload, Shuffle, Scale, Calendar, Users, Settings, ChevronLeft, ChevronRight,
+  LayoutGrid, Upload, Shuffle, Scale, Calendar, Users, Settings, ChevronLeft, ChevronRight, FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AudienciasList from "@/components/AudienciasList";
@@ -11,12 +11,14 @@ import CalendarioAudiencias from "@/components/CalendarioAudiencias";
 import ImportacaoSegura from "@/components/ImportacaoSegura";
 import SorteioAudiencias from "@/components/SorteioAudiencias";
 import PessoasList from "@/components/PessoasList";
+import PautaAtual from "@/components/PautaAtual";
 import smaartTec from "@/assets/smaart-tec.png";
 import smLab from "@/assets/sm-lab.png";
 import smaartLogo from "@/assets/smaart-logo.png";
 
 const MENU_ITEMS = [
   { key: "home", label: "Home", icon: LayoutGrid },
+  { key: "pauta", label: "Pauta Atual", icon: FileText },
   { key: "importacao", label: "Importar Pauta", icon: Upload },
   { key: "sorteio", label: "Distribuição", icon: Shuffle },
   { key: "audiencias", label: "Audiências", icon: Scale },
@@ -107,6 +109,7 @@ const Dashboard = () => {
       <main className="flex-1 overflow-y-scroll h-screen">
         <div className="max-w-[1400px] mx-auto px-6 py-6">
           {activeTab === "home" && <DashboardHome key={refreshKey} />}
+          {activeTab === "pauta" && <PautaAtual key={refreshKey} />}
           {activeTab === "importacao" && (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Importação de Planilha</h2>
