@@ -221,7 +221,7 @@ export default function PautaAtual() {
   const audienciasOnline = useMemo(() => audienciasEfetivas.filter(a => !isPresencial(a)), [audienciasEfetivas]);
   const audienciasPresencial = useMemo(() => audienciasEfetivas.filter(a => isPresencial(a)), [audienciasEfetivas]);
 
-  const totalAudiencias = audiencias.length;
+  const totalAudiencias = audienciasEfetivas.length;
   const completasOnline = audienciasOnline.filter(a => getPendenciasOnline(a).length === 0).length;
   const pendentesOnline = audienciasOnline.length - completasOnline;
   const completasPresencial = audienciasPresencial.filter(a => getPendenciasPresencial(a).length === 0).length;
