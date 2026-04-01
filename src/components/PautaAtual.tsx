@@ -51,6 +51,14 @@ interface HistoricoSorteio {
   semana_inicio: string | null;
 }
 
+interface Pessoa {
+  id: string;
+  nome: string;
+  tipo: string;
+  equipe: string | null;
+  ativo: boolean;
+}
+
 function isPresencial(aud: Audiencia): boolean {
   const tipo = (aud.tipo_audiencia || "").toLowerCase();
   const local = (aud.local || "").toLowerCase();
