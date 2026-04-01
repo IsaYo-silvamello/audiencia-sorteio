@@ -525,8 +525,8 @@ export function useSorteio() {
           ? selecionarPorPrioridade(prepDisponiveis, contagemSemanal)
           : null;
 
-        if (advSorteado) addContagem(advSorteado.id);
-        if (prepSorteado) addContagem(prepSorteado.id);
+        if (advSorteado) addContagem(advSorteado.id, diaAudiencia);
+        if (prepSorteado) addContagem(prepSorteado.id, diaAudiencia);
 
         // Salvar atribuições
         const atribBatch: { audiencia_id: string; pessoa_id: string; semana_inicio: string }[] = [];
