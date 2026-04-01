@@ -1,37 +1,36 @@
 
 
-## Plano: Nova aba "Pauta Atual" no Dashboard
+## Plano: Mapear colunas MELI (DataPrazo / Hora do Prazo)
 
-### Objetivo
+### Problema
 
-Criar uma nova aba no menu lateral chamada "Pauta Atual" que oferece uma visão macro da semana corrente, focando nas pendências e mostrando quando a distribuição foi realizada.
+A planilha MELI usa nomes de colunas diferentes para data e hora:
+- `DataPrazo` (coluna AB) → normalizado para `DATAPRAZO` — **não existe** no HEADER_MAP
+- `Hora do Prazo` (coluna AC) → normalizado para `HORA DO PRAZO` — **não existe** no HEADER_MAP
 
-### Mudanças
+Resultado: 137+ audiências importadas sem data e hora, ficando invisíveis na Pauta Atual.
 
-**1. `src/pages/Dashboard.tsx`**
-- Adicionar item "Pauta Atual" no `MENU_ITEMS` (key: `pauta`, icon: `FileText`, posição logo após Home)
-- Importar e renderizar o novo componente `PautaAtual`
+Outras colunas MELI possivelmente não mapeadas: `ESTADO` (estado/UF), `OBSERVAÇÃO DO PRAZO`/`OBSERVACAO DO PRAZO` (observações).
 
-**2. Novo arquivo: `src/components/PautaAtual.tsx`**
+### Solução
 
-Componente dedicado com as seguintes seções:
+**Arquivo: `src/components/ImportacaoSegura.tsx`**
 
-- **Header**: Título "Pauta Atual" com o período da semana corrente (segunda a sexta)
-- **Card "Última Distribuição"**: Busca o registro mais recente de `historico_sorteios` para a semana atual e exibe data/hora formatada, total de audiências distribuídas, atribuídas e presenciais. Se não houver distribuição, exibe mensagem orientando o usuário
-- **KPIs resumidos**: Cards com Total de audiências, Completas (advogado + preposto + link/foro OK), Pendentes
-- **Tabela de Pendências**: Lista apenas audiências com pelo menos uma pendência (sem advogado, sem preposto, sem link para online, sem foro para presencial, sem horário real). Colunas: NPC, Réu, Data, Hora, Tipo, Pendências (badges). Cada linha clicável para edição (reutilizando o dialog de edição do DashboardHome)
-- **Resumo por dia**: Grid mostrando quantidade de audiências por dia da semana (Seg-Sex) com indicador visual de pendências
+Adicionar ao `HEADER_MAP`:
+```
+"DATAPRAZO" → "data_audiencia"
+"DATA PRAZO" → "data_audiencia"
+"DATA DO PRAZO" → "data_audiencia"
+"HORA DO PRAZO" → "hora_audiencia"
+"ESTADO" → "estado" (será ignorado pois não existe na tabela, mas podemos mapear para "comarca" ou ignorar)
+"OBSERVAÇÃO DO PRAZO" → "observacoes"
+"OBSERVACAO DO PRAZO" → "observacoes"
+"LOCAL" → "local" (já existe)
+```
 
-### Dados consultados
+Também adicionar no `parseExcelDate` suporte ao formato americano curto `M/D/YY` (ex: `4/6/26` → `2026-04-06`), caso o Excel não converta para número serial.
 
-- `audiencias` filtradas pela semana atual (segunda a sexta)
-- `historico_sorteios` com `semana_inicio` da semana atual, ordenado por `executado_em DESC`, limit 1
-- `pautas_semanais` para status da pauta
+### Após implementação
 
-### Detalhes técnicos
-
-- Semana fixa na semana corrente (sem navegação de semanas — para isso o usuário usa a Home)
-- Reutiliza funções `isPresencial`, `getPendencias`, `categorizar` extraídas ou copiadas do `DashboardHome`
-- Dialog de edição inline igual ao do DashboardHome
-- Realtime subscription na tabela `audiencias` para atualizar automaticamente
+Será necessário **reimportar as planilhas** para que as 137 audiências MELI recebam a data e hora corretamente.
 
