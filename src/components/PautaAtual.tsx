@@ -59,6 +59,11 @@ interface Pessoa {
   ativo: boolean;
 }
 
+function isSessaoJulgamento(aud: { tipo_audiencia?: string | null }): boolean {
+  const tipo = (aud.tipo_audiencia || "").toLowerCase();
+  return tipo.includes("sessão de julgamento") || tipo.includes("sessao de julgamento");
+}
+
 function isPresencial(aud: Audiencia): boolean {
   const tipo = (aud.tipo_audiencia || "").toLowerCase();
   const local = (aud.local || "").toLowerCase();
@@ -211,10 +216,12 @@ export default function PautaAtual() {
     return () => { supabase.removeChannel(channel); };
   }, [fetchData]);
 
-  const audienciasOnline = useMemo(() => audiencias.filter(a => !isPresencial(a)), [audiencias]);
-  const audienciasPresencial = useMemo(() => audiencias.filter(a => isPresencial(a)), [audiencias]);
+  // Filtrar sessões de julgamento — não são audiências efetivas
+  const audienciasEfetivas = useMemo(() => audiencias.filter(a => !isSessaoJulgamento(a)), [audiencias]);
+  const audienciasOnline = useMemo(() => audienciasEfetivas.filter(a => !isPresencial(a)), [audienciasEfetivas]);
+  const audienciasPresencial = useMemo(() => audienciasEfetivas.filter(a => isPresencial(a)), [audienciasEfetivas]);
 
-  const totalAudiencias = audiencias.length;
+  const totalAudiencias = audienciasEfetivas.length;
   const completasOnline = audienciasOnline.filter(a => getPendenciasOnline(a).length === 0).length;
   const pendentesOnline = audienciasOnline.length - completasOnline;
   const completasPresencial = audienciasPresencial.filter(a => getPendenciasPresencial(a).length === 0).length;
