@@ -340,6 +340,13 @@ const ImportacaoSegura = ({ onImportComplete }: { onImportComplete?: () => void 
           // Ignorar "Sessão de julgamento" — não são audiências efetivas
           const tipoAud = (record.tipo_audiencia || "").toLowerCase();
           if (tipoAud.includes("sessão de julgamento") || tipoAud.includes("sessao de julgamento")) {
+            setDescartados(prev => [...prev, {
+              npc: record.npc_dossie || record.id_planilha || "—",
+              autor: record.autor || "—",
+              reu: record.reu || "—",
+              tipo: record.tipo_audiencia || "—",
+              motivo: "Sessão de Julgamento — não é audiência efetiva",
+            }]);
             continue;
           }
 
