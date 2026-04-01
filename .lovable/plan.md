@@ -1,36 +1,44 @@
 
 
-## Plano: Mapear colunas MELI (DataPrazo / Hora do Prazo)
+## Plano: Implementar mapeamento de conglomerados para distribuição
 
 ### Problema
 
-A planilha MELI usa nomes de colunas diferentes para data e hora:
-- `DataPrazo` (coluna AB) → normalizado para `DATAPRAZO` — **não existe** no HEADER_MAP
-- `Hora do Prazo` (coluna AC) → normalizado para `HORA DO PRAZO` — **não existe** no HEADER_MAP
+O sistema atual compara diretamente o nome do réu com a equipe do advogado. Porém, os clientes são na verdade conglomerados com múltiplas empresas:
 
-Resultado: 137+ audiências importadas sem data e hora, ficando invisíveis na Pauta Atual.
+- Réu "BANCO ITAU S.A" precisa ser reconhecido como cliente **ITAU**
+- Réu "EBAZAR" precisa ser reconhecido como cliente **MELI**
+- Réu "TELEFÔNICA BRASIL S.A" precisa ser reconhecido como cliente **VIVO**
 
-Outras colunas MELI possivelmente não mapeadas: `ESTADO` (estado/UF), `OBSERVAÇÃO DO PRAZO`/`OBSERVACAO DO PRAZO` (observações).
+Sem esse mapeamento, a distribuição por prioridade de cliente não funciona corretamente.
 
 ### Solução
 
-**Arquivo: `src/components/ImportacaoSegura.tsx`**
+**Arquivo: `src/hooks/useSorteio.ts`**
 
-Adicionar ao `HEADER_MAP`:
+Criar uma função `identificarCliente(reu: string): string` que recebe o nome do réu e retorna o código do conglomerado:
+
+```text
+ITAU  ← contém: ITAU, ITAUCARD, LUIZACRED, MAGAZINE LUIZA
+MELI  ← contém: MERCADO, EBAZAR, MELI
+VIVO  ← contém: TELEFÔNICA, TELEFONICA, VIVO
+BRADESCO ← contém: BRADESCO
+ELETROBRÁS ← contém: ELETROBRAS, ELETROBRÁS
+HEMERA ← contém: HEMERA
 ```
-"DATAPRAZO" → "data_audiencia"
-"DATA PRAZO" → "data_audiencia"
-"DATA DO PRAZO" → "data_audiencia"
-"HORA DO PRAZO" → "hora_audiencia"
-"ESTADO" → "estado" (será ignorado pois não existe na tabela, mas podemos mapear para "comarca" ou ignorar)
-"OBSERVAÇÃO DO PRAZO" → "observacoes"
-"OBSERVACAO DO PRAZO" → "observacoes"
-"LOCAL" → "local" (já existe)
-```
 
-Também adicionar no `parseExcelDate` suporte ao formato americano curto `M/D/YY` (ex: `4/6/26` → `2026-04-06`), caso o Excel não converta para número serial.
+Substituir todas as comparações de cliente no fluxo de distribuição para usar essa função, garantindo que:
+- Advogado da equipe MELI receba audiências de EBAZAR, MERCADO PAGO, etc.
+- Advogado da equipe ITAU receba audiências de LUIZACRED, MAGAZINE LUIZA, ITAUCARD, etc.
+- Advogado da equipe VIVO receba audiências de TELEFÔNICA BRASIL, etc.
 
-### Após implementação
+**Arquivo: `src/components/PautaAtual.tsx`**
 
-Será necessário **reimportar as planilhas** para que as 137 audiências MELI recebam a data e hora corretamente.
+Usar a mesma função para exibir o badge de cliente corretamente nos cards de audiência.
+
+### Detalhes técnicos
+
+- Função com matching case-insensitive usando `.toUpperCase()` e `.includes()`
+- Fallback: se nenhum conglomerado for identificado, retorna o próprio nome do réu
+- Aplicar em: `executarSorteio()` onde compara `equipe` do advogado com o cliente da audiência
 
