@@ -14,9 +14,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Shuffle, AlertCircle, TriangleAlert, CheckCircle2, XCircle, MapPin, ChevronDown, ChevronUp, CalendarCheck, Calendar } from "lucide-react";
+import { Shuffle, AlertCircle, TriangleAlert, CheckCircle2, XCircle, MapPin, ChevronDown, ChevronUp, CalendarCheck, Calendar, Loader2, History } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Progress } from "@/components/ui/progress";
+import HistoricoSorteios from "@/components/HistoricoSorteios";
 
 interface SorteioAudienciasProps {
   onSorteioComplete?: () => void;
@@ -147,6 +149,22 @@ const SorteioAudiencias = ({ onSorteioComplete }: SorteioAudienciasProps) => {
         </CardContent>
       </Card>
 
+      {/* Loading durante execução */}
+      {status === "executando" && (
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex flex-col items-center gap-4 py-6">
+              <Loader2 className="h-10 w-10 text-primary animate-spin" />
+              <div className="text-center space-y-2 w-full">
+                <p className="text-sm font-medium text-foreground">Realizando distribuição de audiências...</p>
+                <p className="text-xs text-muted-foreground">Aguarde enquanto os advogados e prepostos são atribuídos</p>
+                <Progress value={undefined} className="w-full max-w-md mx-auto h-2 animate-pulse" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Semanas já sorteadas */}
       {semanasSorteadas.length > 0 && (
         <Card>
@@ -274,6 +292,24 @@ const SorteioAudiencias = ({ onSorteioComplete }: SorteioAudienciasProps) => {
           </CardContent>
         </Card>
       )}
+
+      {/* Histórico de Distribuições */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <History className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Histórico de Distribuições</CardTitle>
+              <CardDescription>Registro de todas as distribuições realizadas</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <HistoricoSorteios />
+        </CardContent>
+      </Card>
 
       {/* Modal de confirmação */}
       <AlertDialog open={confirmar} onOpenChange={setConfirmar}>
