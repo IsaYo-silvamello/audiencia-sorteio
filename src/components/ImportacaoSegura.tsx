@@ -244,6 +244,8 @@ const ImportacaoSegura = ({ onImportComplete }: { onImportComplete?: () => void 
 
     setImporting(true);
     setResult(null);
+    setDescartados([]);
+    setShowDescartados(false);
     setImportProgress(0);
     setImportStatus("Lendo planilhas...");
 
