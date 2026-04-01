@@ -51,11 +51,7 @@ interface Afastamento {
   horario_especial_fim: string | null;
 }
 
-const CLIENTES_PREPOSTO = [
-  "Acordos", "AUDIÊNCIAS", "BRADESCO", "Eletrobrás", "GERAL", "ITAÚ", "ITAÚ - CARTÕES",
-  "ITAÚ - Fraudes", "ITAÚ - SB/FRAUDE/CONSIGNADO", "ITAÚ - SUPERENDIVIDAMENTO",
-  "ITAÚ JV", "MELI", "PLANOS ECONÔMICOS", "VIVO",
-];
+// Prepostos usam a mesma lista de clientes (EQUIPES) dos advogados
 
 const EQUIPES = ["ELETROBRÁS", "ITAÚ", "MELI", "BRADESCO", "VIVO", "HEMERA"];
 
@@ -356,8 +352,8 @@ const AdminPessoasManager = () => {
           )}
           <div className="space-y-2">
             <Label>Clientes</Label>
-            <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-36 overflow-y-auto">
-              {CLIENTES_PREPOSTO.map((c) => {
+            <div className="grid grid-cols-3 gap-2 border rounded-md p-3 max-h-36 overflow-y-auto">
+              {EQUIPES.map((c) => {
                 const sel = data.equipe ? data.equipe.split(", ") : [];
                 return (
                   <label key={c} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -373,6 +369,7 @@ const AdminPessoasManager = () => {
         </>
       )}
 
+      {data.tipo === "advogado" && (
       <div className="space-y-2">
         <Label>Carteira (Assunto)</Label>
         <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto">
@@ -389,6 +386,7 @@ const AdminPessoasManager = () => {
           })}
         </div>
       </div>
+      )}
 
       <div className="space-y-2">
         <Label>Observação</Label>
