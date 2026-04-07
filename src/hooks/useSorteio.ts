@@ -73,9 +73,8 @@ function foraDoExpediente(hora: string | null): boolean {
 
 function getInicioSemana(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
+  const day = d.getDay(); // 0 = domingo
+  d.setDate(d.getDate() - day); // volta para domingo
   return d.toISOString().split("T")[0];
 }
 
