@@ -483,23 +483,22 @@ export default function PautaAtual() {
       </Card>
 
       {/* ─── SEÇÃO ONLINE ─── */}
-      <Card className="border-2 border-blue-200 dark:border-blue-800">
+      <Card className={`border-2 border-blue-200 dark:border-blue-800 ${expandedSection === "online" ? "fixed inset-0 z-50 m-0 rounded-none border-0 overflow-auto" : ""}`}>
         <CardHeader className="pb-3 flex flex-row items-center gap-2">
           <Monitor className="h-5 w-5 text-blue-600" />
           <div className="flex-1">
             <CardTitle className="text-base">Audiências Online ({audienciasOnline.length})</CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">Advogado e preposto internos • {completasOnline} completas, {pendentesOnline} pendentes</p>
           </div>
-          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setExpandedOnline(e => !e)}>
-            {expandedOnline ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
-            {expandedOnline ? "Só pendentes" : "Ver todas"}
+          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setExpandedSection(s => s === "online" ? null : "online")}>
+            {expandedSection === "online" ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+            {expandedSection === "online" ? "Recolher" : "Expandir"}
           </Button>
         </CardHeader>
         <CardContent>
           {sortedOnline.length === 0 ? (
             <div className="text-center py-6 text-muted-foreground">
-              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-500 opacity-60" />
-              <p className="font-medium text-sm">{expandedOnline ? "Nenhuma audiência online nesta semana." : "Todas as audiências online estão completas!"}</p>
+              <p className="text-sm">Nenhuma audiência online nesta semana.</p>
             </div>
           ) : (
             <div className="overflow-auto max-h-[60vh]">
