@@ -277,8 +277,8 @@ export default function PautaAtual() {
     );
   };
 
-  const sortedOnline = useMemo(() => sortAudiencias(expandedOnline ? audienciasOnline : comPendenciasOnline, sortOnline.key, sortOnline.dir), [audienciasOnline, comPendenciasOnline, expandedOnline, sortOnline]);
-  const sortedPresencial = useMemo(() => sortAudiencias(expandedPresencial ? audienciasPresencial : comPendenciasPresencial, sortPresencial.key, sortPresencial.dir), [audienciasPresencial, comPendenciasPresencial, expandedPresencial, sortPresencial]);
+  const sortedOnline = useMemo(() => sortAudiencias(audienciasOnline, sortOnline.key, sortOnline.dir), [audienciasOnline, sortOnline]);
+  const sortedPresencial = useMemo(() => sortAudiencias(audienciasPresencial, sortPresencial.key, sortPresencial.dir), [audienciasPresencial, sortPresencial]);
 
   // Resumo por dia
   const resumoPorDia = useMemo(() => {
