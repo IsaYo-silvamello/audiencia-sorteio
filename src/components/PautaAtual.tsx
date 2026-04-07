@@ -76,7 +76,7 @@ function isPresencial(aud: Audiencia): boolean {
 
 function getPendenciasOnline(aud: Audiencia): string[] {
   const pends: string[] = [];
-  if (!aud.adv_responsavel) pends.push("Sem advogado");
+  if (!aud.advogado) pends.push("Sem advogado");
   if (!aud.preposto) pends.push("Sem preposto");
   if (!aud.link) pends.push("Sem link");
   const hora = aud.hora_audiencia || "";
@@ -484,8 +484,13 @@ export default function PautaAtual() {
                           <Badge variant="outline" className="text-[10px]">{aud.tipo_audiencia || "—"}</Badge>
                         </TableCell>
                         <TableCell className="text-sm">
-                          {aud.adv_responsavel ? (
-                            <span className="text-blue-700 dark:text-blue-300">{aud.adv_responsavel}</span>
+                          {aud.advogado ? (
+                            <div>
+                              <span className="text-blue-700 dark:text-blue-300">{aud.advogado}</span>
+                              {aud.adv_responsavel && aud.adv_responsavel !== aud.advogado && (
+                                <p className="text-[10px] text-muted-foreground mt-0.5">Resp: {aud.adv_responsavel}</p>
+                              )}
+                            </div>
                           ) : (
                             <span className="text-amber-600">⚠ Pendente</span>
                           )}
@@ -652,13 +657,17 @@ export default function PautaAtual() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Advogado Responsável</Label>
-                <Input value={editForm.adv_responsavel || ""} onChange={(e) => setEditForm((f) => ({ ...f, adv_responsavel: e.target.value }))} />
+                <Label>Advogado (Distribuído)</Label>
+                <Input value={editForm.advogado || ""} onChange={(e) => setEditForm((f) => ({ ...f, advogado: e.target.value }))} />
               </div>
               <div>
                 <Label>Preposto</Label>
                 <Input value={editForm.preposto || ""} onChange={(e) => setEditForm((f) => ({ ...f, preposto: e.target.value }))} />
               </div>
+            </div>
+            <div>
+              <Label className="text-muted-foreground">Adv. Responsável Original (planilha)</Label>
+              <Input value={editForm.adv_responsavel || ""} onChange={(e) => setEditForm((f) => ({ ...f, adv_responsavel: e.target.value }))} className="text-muted-foreground" />
             </div>
             <div>
               <Label>Link (audiência online)</Label>
