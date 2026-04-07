@@ -685,40 +685,8 @@ export default function PautaAtual() {
           )}
         </CardContent>
       </Card>
-                    return (
-                      <TableRow key={aud.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openEdit(aud)}>
-                        <TableCell className="text-sm font-mono font-bold text-primary">{aud.npc_dossie || "—"}</TableCell>
-                        <TableCell className="text-sm font-medium max-w-[160px] truncate">{aud.reu || "—"}</TableCell>
-                        <TableCell className="whitespace-nowrap text-sm">
-                          {aud.data_audiencia ? format(new Date(aud.data_audiencia + "T00:00:00"), "dd/MM", { locale: ptBR }) : "—"}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-sm">
-                          {aud.hora_audiencia && aud.hora_audiencia !== "00:01:00" && aud.hora_audiencia !== "00:00:00"
-                            ? aud.hora_audiencia.slice(0, 5) : <span className="text-amber-600">—</span>}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          <Badge variant="outline" className="text-[10px]">{aud.tipo_audiencia || "—"}</Badge>
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {aud.foro || aud.local ? <span>{aud.foro || aud.local}</span> : <span className="text-amber-600">⚠ Sem foro</span>}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {pends.map((p) => (
-                              <Badge key={p} variant="outline" className="text-[10px] text-amber-600 border-amber-300">{p}</Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell><Pencil className="h-3.5 w-3.5 text-muted-foreground" /></TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+
+
 
       {/* Edit Dialog */}
       <Dialog open={editAud !== null} onOpenChange={(open) => !open && setEditAud(null)}>
