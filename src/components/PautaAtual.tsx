@@ -260,6 +260,27 @@ export default function PautaAtual() {
   const comPendenciasOnline = useMemo(() => audienciasOnline.filter(a => getPendenciasOnline(a).length > 0), [audienciasOnline]);
   const comPendenciasPresencial = useMemo(() => audienciasPresencial.filter(a => getPendenciasPresencial(a).length > 0), [audienciasPresencial]);
 
+  const toggleSort = (section: "online" | "presencial", key: SortKey) => {
+    const setter = section === "online" ? setSortOnline : setSortPresencial;
+    setter(prev => prev.key === key ? { key, dir: prev.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
+  };
+
+  const SortableHead = ({ label, sortKey, section }: { label: string; sortKey: SortKey; section: "online" | "presencial" }) => {
+    const current = section === "online" ? sortOnline : sortPresencial;
+    const active = current.key === sortKey;
+    return (
+      <TableHead className="cursor-pointer select-none hover:bg-muted/50 transition-colors" onClick={() => toggleSort(section, sortKey)}>
+        <div className="flex items-center gap-1">
+          {label}
+          {active ? (current.dir === "asc" ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : <ChevronsUpDown className="h-3 w-3 opacity-30" />}
+        </div>
+      </TableHead>
+    );
+  };
+
+  const sortedOnline = useMemo(() => sortAudiencias(expandedOnline ? audienciasOnline : comPendenciasOnline, sortOnline.key, sortOnline.dir), [audienciasOnline, comPendenciasOnline, expandedOnline, sortOnline]);
+  const sortedPresencial = useMemo(() => sortAudiencias(expandedPresencial ? audienciasPresencial : comPendenciasPresencial, sortPresencial.key, sortPresencial.dir), [audienciasPresencial, comPendenciasPresencial, expandedPresencial, sortPresencial]);
+
   // Resumo por dia
   const resumoPorDia = useMemo(() => {
     const dias: { data: Date; label: string; total: number; pendentes: number }[] = [];
