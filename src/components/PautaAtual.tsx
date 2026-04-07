@@ -482,8 +482,10 @@ export default function PautaAtual() {
           </div>
         </CardContent>
       </Card>
+      </>)}
 
-      {/* ─── SEÇÃO ONLINE ─── */}
+      {expandedSection !== "presencial" && (
+      /* ─── SEÇÃO ONLINE ─── */
       <Card className={`border-2 border-blue-200 dark:border-blue-800 ${expandedSection === "online" ? "fixed inset-0 z-50 m-0 rounded-none border-0 overflow-auto" : ""}`}>
         <CardHeader className="pb-3 flex flex-row items-center gap-2">
           <Monitor className="h-5 w-5 text-blue-600" />
