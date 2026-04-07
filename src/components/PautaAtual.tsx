@@ -131,8 +131,7 @@ export default function PautaAtual() {
   const [semanaAtual, setSemanaAtual] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
   const [assigningPreposto, setAssigningPreposto] = useState<string | null>(null);
-  const [expandedOnline, setExpandedOnline] = useState(false);
-  const [expandedPresencial, setExpandedPresencial] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<"online" | "presencial" | null>(null);
   const [sortOnline, setSortOnline] = useState<{ key: SortKey; dir: SortDir }>({ key: "data", dir: "asc" });
   const [sortPresencial, setSortPresencial] = useState<{ key: SortKey; dir: SortDir }>({ key: "data", dir: "asc" });
 
@@ -278,8 +277,8 @@ export default function PautaAtual() {
     );
   };
 
-  const sortedOnline = useMemo(() => sortAudiencias(expandedOnline ? audienciasOnline : comPendenciasOnline, sortOnline.key, sortOnline.dir), [audienciasOnline, comPendenciasOnline, expandedOnline, sortOnline]);
-  const sortedPresencial = useMemo(() => sortAudiencias(expandedPresencial ? audienciasPresencial : comPendenciasPresencial, sortPresencial.key, sortPresencial.dir), [audienciasPresencial, comPendenciasPresencial, expandedPresencial, sortPresencial]);
+  const sortedOnline = useMemo(() => sortAudiencias(audienciasOnline, sortOnline.key, sortOnline.dir), [audienciasOnline, sortOnline]);
+  const sortedPresencial = useMemo(() => sortAudiencias(audienciasPresencial, sortPresencial.key, sortPresencial.dir), [audienciasPresencial, sortPresencial]);
 
   // Resumo por dia
   const resumoPorDia = useMemo(() => {
@@ -355,6 +354,7 @@ export default function PautaAtual() {
 
   return (
     <div className="space-y-6">
+      {!expandedSection && (<>
       {/* Header with week navigation */}
       <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
@@ -482,28 +482,29 @@ export default function PautaAtual() {
           </div>
         </CardContent>
       </Card>
+      </>)}
 
-      {/* ─── SEÇÃO ONLINE ─── */}
-      <Card className="border-2 border-blue-200 dark:border-blue-800">
+      {expandedSection !== "presencial" && (
+      /* ─── SEÇÃO ONLINE ─── */
+      <Card className={`border-2 border-blue-200 dark:border-blue-800 ${expandedSection === "online" ? "fixed inset-0 z-50 m-0 rounded-none border-0 overflow-auto bg-background" : ""}`}>
         <CardHeader className="pb-3 flex flex-row items-center gap-2">
           <Monitor className="h-5 w-5 text-blue-600" />
           <div className="flex-1">
             <CardTitle className="text-base">Audiências Online ({audienciasOnline.length})</CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">Advogado e preposto internos • {completasOnline} completas, {pendentesOnline} pendentes</p>
           </div>
-          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setExpandedOnline(e => !e)}>
-            {expandedOnline ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
-            {expandedOnline ? "Só pendentes" : "Ver todas"}
+          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setExpandedSection(s => s === "online" ? null : "online")}>
+            {expandedSection === "online" ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+            {expandedSection === "online" ? "Recolher" : "Expandir"}
           </Button>
         </CardHeader>
         <CardContent>
           {sortedOnline.length === 0 ? (
             <div className="text-center py-6 text-muted-foreground">
-              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-500 opacity-60" />
-              <p className="font-medium text-sm">{expandedOnline ? "Nenhuma audiência online nesta semana." : "Todas as audiências online estão completas!"}</p>
+              <p className="text-sm">Nenhuma audiência online nesta semana.</p>
             </div>
           ) : (
-            <div className="overflow-auto max-h-[60vh]">
+            <div className={`overflow-auto ${expandedSection === "online" ? "" : "max-h-[60vh]"}`}>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -603,18 +604,20 @@ export default function PautaAtual() {
           )}
         </CardContent>
       </Card>
+      )}
 
-      {/* ─── SEÇÃO PRESENCIAL ─── */}
-      <Card className="border-2 border-orange-200 dark:border-orange-800">
+      {expandedSection !== "online" && (
+      /* ─── SEÇÃO PRESENCIAL ─── */
+      <Card className={`border-2 border-orange-200 dark:border-orange-800 ${expandedSection === "presencial" ? "fixed inset-0 z-50 m-0 rounded-none border-0 overflow-auto bg-background" : ""}`}>
         <CardHeader className="pb-3 flex flex-row items-center gap-2">
           <Building2 className="h-5 w-5 text-orange-600" />
           <div className="flex-1">
             <CardTitle className="text-base">Audiências Presenciais ({audienciasPresencial.length})</CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">Advogado e preposto serão contratados (correspondente externo) • {completasPresencial} completas, {pendentesPresencial} pendentes</p>
           </div>
-          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setExpandedPresencial(e => !e)}>
-            {expandedPresencial ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
-            {expandedPresencial ? "Só pendentes" : "Ver todas"}
+          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setExpandedSection(s => s === "presencial" ? null : "presencial")}>
+            {expandedSection === "presencial" ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+            {expandedSection === "presencial" ? "Recolher" : "Expandir"}
           </Button>
         </CardHeader>
         <CardContent>
@@ -630,7 +633,7 @@ export default function PautaAtual() {
               )}
             </div>
           ) : (
-            <div className="overflow-auto max-h-[60vh]">
+            <div className={`overflow-auto ${expandedSection === "presencial" ? "" : "max-h-[60vh]"}`}>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -685,6 +688,7 @@ export default function PautaAtual() {
           )}
         </CardContent>
       </Card>
+      )}
 
 
 
