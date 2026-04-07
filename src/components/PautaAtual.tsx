@@ -491,31 +491,35 @@ export default function PautaAtual() {
             <CardTitle className="text-base">Audiências Online ({audienciasOnline.length})</CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">Advogado e preposto internos • {completasOnline} completas, {pendentesOnline} pendentes</p>
           </div>
+          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setExpandedOnline(e => !e)}>
+            {expandedOnline ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+            {expandedOnline ? "Só pendentes" : "Ver todas"}
+          </Button>
         </CardHeader>
         <CardContent>
-          {comPendenciasOnline.length === 0 ? (
+          {sortedOnline.length === 0 ? (
             <div className="text-center py-6 text-muted-foreground">
               <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-500 opacity-60" />
-              <p className="font-medium text-sm">Todas as audiências online estão completas!</p>
+              <p className="font-medium text-sm">{expandedOnline ? "Nenhuma audiência online nesta semana." : "Todas as audiências online estão completas!"}</p>
             </div>
           ) : (
-            <div className="overflow-auto max-h-[40vh]">
+            <div className="overflow-auto max-h-[60vh]">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[90px]">NPC</TableHead>
-                    <TableHead>Réu</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Hora</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Advogado</TableHead>
-                    <TableHead>Preposto</TableHead>
-                    <TableHead>Pendências</TableHead>
+                    <SortableHead label="NPC" sortKey="npc" section="online" />
+                    <SortableHead label="Réu" sortKey="reu" section="online" />
+                    <SortableHead label="Data" sortKey="data" section="online" />
+                    <SortableHead label="Hora" sortKey="hora" section="online" />
+                    <SortableHead label="Tipo" sortKey="tipo" section="online" />
+                    <SortableHead label="Advogado" sortKey="advogado" section="online" />
+                    <SortableHead label="Preposto" sortKey="preposto" section="online" />
+                    <SortableHead label="Pendências" sortKey="pendencias" section="online" />
                     <TableHead className="w-[40px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {comPendenciasOnline.map((aud) => {
+                  {sortedOnline.map((aud) => {
                     const pends = getPendenciasOnline(aud);
                     return (
                       <TableRow key={aud.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openEdit(aud)}>
@@ -533,12 +537,7 @@ export default function PautaAtual() {
                         </TableCell>
                         <TableCell className="text-sm">
                           {aud.advogado ? (
-                            <div>
-                              <span className="text-blue-700 dark:text-blue-300">{aud.advogado}</span>
-                              {aud.adv_responsavel && aud.adv_responsavel !== aud.advogado && (
-                                <p className="text-[10px] text-muted-foreground mt-0.5">Resp: {aud.adv_responsavel}</p>
-                              )}
-                            </div>
+                            <span className="text-blue-700 dark:text-blue-300">{aud.advogado}</span>
                           ) : (
                             <span className="text-amber-600">⚠ Pendente</span>
                           )}
@@ -584,11 +583,15 @@ export default function PautaAtual() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {pends.map((p) => (
-                              <Badge key={p} variant="outline" className="text-[10px] text-amber-600 border-amber-300">{p}</Badge>
-                            ))}
-                          </div>
+                          {pends.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {pends.map((p) => (
+                                <Badge key={p} variant="outline" className="text-[10px] text-amber-600 border-amber-300">{p}</Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <Badge className="text-[10px] bg-green-100 text-green-700 border-green-300">OK</Badge>
+                          )}
                         </TableCell>
                         <TableCell><Pencil className="h-3.5 w-3.5 text-muted-foreground" /></TableCell>
                       </TableRow>
@@ -609,35 +612,79 @@ export default function PautaAtual() {
             <CardTitle className="text-base">Audiências Presenciais ({audienciasPresencial.length})</CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">Advogado e preposto serão contratados (correspondente externo) • {completasPresencial} completas, {pendentesPresencial} pendentes</p>
           </div>
+          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setExpandedPresencial(e => !e)}>
+            {expandedPresencial ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+            {expandedPresencial ? "Só pendentes" : "Ver todas"}
+          </Button>
         </CardHeader>
         <CardContent>
-          {audienciasPresencial.length === 0 ? (
+          {sortedPresencial.length === 0 ? (
             <div className="text-center py-6 text-muted-foreground">
-              <p className="text-sm">Nenhuma audiência presencial nesta semana.</p>
-            </div>
-          ) : comPendenciasPresencial.length === 0 ? (
-            <div className="text-center py-6 text-muted-foreground">
-              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-500 opacity-60" />
-              <p className="font-medium text-sm">Todas as audiências presenciais estão completas!</p>
+              {audienciasPresencial.length === 0 ? (
+                <p className="text-sm">Nenhuma audiência presencial nesta semana.</p>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-500 opacity-60" />
+                  <p className="font-medium text-sm">Todas as audiências presenciais estão completas!</p>
+                </>
+              )}
             </div>
           ) : (
-            <div className="overflow-auto max-h-[40vh]">
+            <div className="overflow-auto max-h-[60vh]">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[90px]">NPC</TableHead>
-                    <TableHead>Réu</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Hora</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Foro / Local</TableHead>
-                    <TableHead>Pendências</TableHead>
+                    <SortableHead label="NPC" sortKey="npc" section="presencial" />
+                    <SortableHead label="Réu" sortKey="reu" section="presencial" />
+                    <SortableHead label="Data" sortKey="data" section="presencial" />
+                    <SortableHead label="Hora" sortKey="hora" section="presencial" />
+                    <SortableHead label="Tipo" sortKey="tipo" section="presencial" />
+                    <SortableHead label="Foro / Local" sortKey="foro" section="presencial" />
+                    <SortableHead label="Pendências" sortKey="pendencias" section="presencial" />
                     <TableHead className="w-[40px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {comPendenciasPresencial.map((aud) => {
+                  {sortedPresencial.map((aud) => {
                     const pends = getPendenciasPresencial(aud);
+                    return (
+                      <TableRow key={aud.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openEdit(aud)}>
+                        <TableCell className="text-sm font-mono font-bold text-primary">{aud.npc_dossie || "—"}</TableCell>
+                        <TableCell className="text-sm font-medium max-w-[160px] truncate">{aud.reu || "—"}</TableCell>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {aud.data_audiencia ? format(new Date(aud.data_audiencia + "T00:00:00"), "dd/MM", { locale: ptBR }) : "—"}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {aud.hora_audiencia && aud.hora_audiencia !== "00:01:00" && aud.hora_audiencia !== "00:00:00"
+                            ? aud.hora_audiencia.slice(0, 5) : <span className="text-amber-600">—</span>}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          <Badge variant="outline" className="text-[10px]">{aud.tipo_audiencia || "—"}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {aud.foro || aud.local ? <span>{aud.foro || aud.local}</span> : <span className="text-amber-600">⚠ Sem foro</span>}
+                        </TableCell>
+                        <TableCell>
+                          {pends.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {pends.map((p) => (
+                                <Badge key={p} variant="outline" className="text-[10px] text-amber-600 border-amber-300">{p}</Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <Badge className="text-[10px] bg-green-100 text-green-700 border-green-300">OK</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell><Pencil className="h-3.5 w-3.5 text-muted-foreground" /></TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
                     return (
                       <TableRow key={aud.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openEdit(aud)}>
                         <TableCell className="text-sm font-mono font-bold text-primary">{aud.npc_dossie || "—"}</TableCell>
