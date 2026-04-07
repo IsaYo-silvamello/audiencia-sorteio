@@ -608,7 +608,7 @@ export default function PautaAtual() {
 
       {expandedSection !== "online" && (
       /* ─── SEÇÃO PRESENCIAL ─── */
-      <Card className={`border-2 border-orange-200 dark:border-orange-800 ${expandedSection === "presencial" ? "fixed inset-0 z-50 m-0 rounded-none border-0 overflow-auto" : ""}`}>
+      <Card className={`border-2 border-orange-200 dark:border-orange-800 ${expandedSection === "presencial" ? "fixed inset-0 z-50 m-0 rounded-none border-0 overflow-auto bg-background" : ""}`}>
         <CardHeader className="pb-3 flex flex-row items-center gap-2">
           <Building2 className="h-5 w-5 text-orange-600" />
           <div className="flex-1">
