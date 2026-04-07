@@ -131,8 +131,7 @@ export default function PautaAtual() {
   const [semanaAtual, setSemanaAtual] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
   const [assigningPreposto, setAssigningPreposto] = useState<string | null>(null);
-  const [expandedOnline, setExpandedOnline] = useState(false);
-  const [expandedPresencial, setExpandedPresencial] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<"online" | "presencial" | null>(null);
   const [sortOnline, setSortOnline] = useState<{ key: SortKey; dir: SortDir }>({ key: "data", dir: "asc" });
   const [sortPresencial, setSortPresencial] = useState<{ key: SortKey; dir: SortDir }>({ key: "data", dir: "asc" });
 
