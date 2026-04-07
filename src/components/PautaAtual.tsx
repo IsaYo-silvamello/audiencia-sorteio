@@ -657,13 +657,17 @@ export default function PautaAtual() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Advogado Responsável</Label>
-                <Input value={editForm.adv_responsavel || ""} onChange={(e) => setEditForm((f) => ({ ...f, adv_responsavel: e.target.value }))} />
+                <Label>Advogado (Distribuído)</Label>
+                <Input value={editForm.advogado || ""} onChange={(e) => setEditForm((f) => ({ ...f, advogado: e.target.value }))} />
               </div>
               <div>
                 <Label>Preposto</Label>
                 <Input value={editForm.preposto || ""} onChange={(e) => setEditForm((f) => ({ ...f, preposto: e.target.value }))} />
               </div>
+            </div>
+            <div>
+              <Label className="text-muted-foreground">Adv. Responsável Original (planilha)</Label>
+              <Input value={editForm.adv_responsavel || ""} onChange={(e) => setEditForm((f) => ({ ...f, adv_responsavel: e.target.value }))} className="text-muted-foreground" />
             </div>
             <div>
               <Label>Link (audiência online)</Label>

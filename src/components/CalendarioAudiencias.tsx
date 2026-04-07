@@ -41,7 +41,7 @@ function isPresencial(a: Audiencia): boolean {
 }
 
 function getResponsavel(a: Audiencia): string {
-  return a.adv_responsavel || a.advogado || a.preposto || "Sem responsável";
+  return a.advogado || a.preposto || a.adv_responsavel || "Sem responsável";
 }
 
 function formatWeekHeader(inicio: Date, fim: Date): string {
