@@ -354,6 +354,7 @@ export default function PautaAtual() {
 
   return (
     <div className="space-y-6">
+      {!expandedSection && (<>
       {/* Header with week navigation */}
       <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
