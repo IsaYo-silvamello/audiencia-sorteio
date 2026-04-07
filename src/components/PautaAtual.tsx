@@ -76,7 +76,7 @@ function isPresencial(aud: Audiencia): boolean {
 
 function getPendenciasOnline(aud: Audiencia): string[] {
   const pends: string[] = [];
-  if (!aud.adv_responsavel) pends.push("Sem advogado");
+  if (!aud.advogado) pends.push("Sem advogado");
   if (!aud.preposto) pends.push("Sem preposto");
   if (!aud.link) pends.push("Sem link");
   const hora = aud.hora_audiencia || "";
