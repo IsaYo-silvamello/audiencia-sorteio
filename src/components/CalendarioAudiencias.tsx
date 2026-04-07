@@ -92,8 +92,8 @@ const CalendarioAudiencias = () => {
     fetchAudiencias();
   }, []);
 
-  const inicio = startOfWeek(semanaRef, { weekStartsOn: 1 });
-  const fim = endOfWeek(semanaRef, { weekStartsOn: 1 });
+  const inicio = startOfWeek(semanaRef, { weekStartsOn: 0 });
+  const fim = endOfWeek(semanaRef, { weekStartsOn: 0 });
   const dias = eachDayOfInterval({ start: inicio, end: fim });
 
   const audienciasPorDia = useMemo(() => {
