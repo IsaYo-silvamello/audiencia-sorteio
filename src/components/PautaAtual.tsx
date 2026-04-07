@@ -688,6 +688,7 @@ export default function PautaAtual() {
           )}
         </CardContent>
       </Card>
+      )}
 
 
 
