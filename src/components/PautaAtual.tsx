@@ -484,8 +484,13 @@ export default function PautaAtual() {
                           <Badge variant="outline" className="text-[10px]">{aud.tipo_audiencia || "—"}</Badge>
                         </TableCell>
                         <TableCell className="text-sm">
-                          {aud.adv_responsavel ? (
-                            <span className="text-blue-700 dark:text-blue-300">{aud.adv_responsavel}</span>
+                          {aud.advogado ? (
+                            <div>
+                              <span className="text-blue-700 dark:text-blue-300">{aud.advogado}</span>
+                              {aud.adv_responsavel && aud.adv_responsavel !== aud.advogado && (
+                                <p className="text-[10px] text-muted-foreground mt-0.5">Resp: {aud.adv_responsavel}</p>
+                              )}
+                            </div>
                           ) : (
                             <span className="text-amber-600">⚠ Pendente</span>
                           )}
