@@ -99,6 +99,28 @@ function getPendencias(aud: Audiencia): string[] {
 
 const DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
+type SortKey = "npc" | "reu" | "data" | "hora" | "tipo" | "advogado" | "preposto" | "foro" | "pendencias";
+type SortDir = "asc" | "desc";
+
+function sortAudiencias(auds: Audiencia[], key: SortKey, dir: SortDir): Audiencia[] {
+  return [...auds].sort((a, b) => {
+    let va = "", vb = "";
+    switch (key) {
+      case "npc": va = a.npc_dossie || ""; vb = b.npc_dossie || ""; break;
+      case "reu": va = a.reu || ""; vb = b.reu || ""; break;
+      case "data": va = a.data_audiencia || ""; vb = b.data_audiencia || ""; break;
+      case "hora": va = a.hora_audiencia || ""; vb = b.hora_audiencia || ""; break;
+      case "tipo": va = a.tipo_audiencia || ""; vb = b.tipo_audiencia || ""; break;
+      case "advogado": va = a.advogado || ""; vb = b.advogado || ""; break;
+      case "preposto": va = a.preposto || ""; vb = b.preposto || ""; break;
+      case "foro": va = a.foro || a.local || ""; vb = b.foro || b.local || ""; break;
+      case "pendencias": va = String(getPendencias(a).length); vb = String(getPendencias(b).length); break;
+    }
+    const cmp = va.localeCompare(vb, "pt-BR", { numeric: true });
+    return dir === "asc" ? cmp : -cmp;
+  });
+}
+
 export default function PautaAtual() {
   const [audiencias, setAudiencias] = useState<Audiencia[]>([]);
   const [prepostos, setPrepostos] = useState<Pessoa[]>([]);
@@ -109,6 +131,10 @@ export default function PautaAtual() {
   const [semanaAtual, setSemanaAtual] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
   const [assigningPreposto, setAssigningPreposto] = useState<string | null>(null);
+  const [expandedOnline, setExpandedOnline] = useState(false);
+  const [expandedPresencial, setExpandedPresencial] = useState(false);
+  const [sortOnline, setSortOnline] = useState<{ key: SortKey; dir: SortDir }>({ key: "data", dir: "asc" });
+  const [sortPresencial, setSortPresencial] = useState<{ key: SortKey; dir: SortDir }>({ key: "data", dir: "asc" });
 
   // On mount: find the latest distribution week, default to current week
   useEffect(() => {
