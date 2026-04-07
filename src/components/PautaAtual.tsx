@@ -501,7 +501,7 @@ export default function PautaAtual() {
               <p className="text-sm">Nenhuma audiência online nesta semana.</p>
             </div>
           ) : (
-            <div className="overflow-auto max-h-[60vh]">
+            <div className={`overflow-auto ${expandedSection === "online" ? "" : "max-h-[60vh]"}`}>
               <Table>
                 <TableHeader>
                   <TableRow>
