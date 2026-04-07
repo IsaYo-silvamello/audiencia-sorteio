@@ -12,7 +12,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Calendar, Clock, Users, AlertTriangle, CheckCircle2,
   Link2, MapPin, Pencil, ExternalLink, Building2, Monitor,
-  FileText, History, ChevronLeft, ChevronRight, Star, UserCheck
+  FileText, History, ChevronLeft, ChevronRight, Star, UserCheck,
+  ChevronDown, ChevronUp, ChevronsUpDown, Maximize2, Minimize2
 } from "lucide-react";
 import { startOfWeek, endOfWeek, format, addDays, addWeeks, isSameWeek, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
