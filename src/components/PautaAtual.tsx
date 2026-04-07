@@ -603,16 +603,16 @@ export default function PautaAtual() {
       </Card>
 
       {/* ─── SEÇÃO PRESENCIAL ─── */}
-      <Card className="border-2 border-orange-200 dark:border-orange-800">
+      <Card className={`border-2 border-orange-200 dark:border-orange-800 ${expandedSection === "presencial" ? "fixed inset-0 z-50 m-0 rounded-none border-0 overflow-auto" : ""}`}>
         <CardHeader className="pb-3 flex flex-row items-center gap-2">
           <Building2 className="h-5 w-5 text-orange-600" />
           <div className="flex-1">
             <CardTitle className="text-base">Audiências Presenciais ({audienciasPresencial.length})</CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">Advogado e preposto serão contratados (correspondente externo) • {completasPresencial} completas, {pendentesPresencial} pendentes</p>
           </div>
-          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setExpandedPresencial(e => !e)}>
-            {expandedPresencial ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
-            {expandedPresencial ? "Só pendentes" : "Ver todas"}
+          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setExpandedSection(s => s === "presencial" ? null : "presencial")}>
+            {expandedSection === "presencial" ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+            {expandedSection === "presencial" ? "Recolher" : "Expandir"}
           </Button>
         </CardHeader>
         <CardContent>
@@ -628,7 +628,7 @@ export default function PautaAtual() {
               )}
             </div>
           ) : (
-            <div className="overflow-auto max-h-[60vh]">
+            <div className={`overflow-auto ${expandedSection === "presencial" ? "" : "max-h-[60vh]"}`}>
               <Table>
                 <TableHeader>
                   <TableRow>
